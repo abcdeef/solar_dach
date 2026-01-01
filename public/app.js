@@ -125,7 +125,7 @@
     textBase.textContent = `${width} m`;
     bg.appendChild(textBase);
 
-    // Draw verbotszone (forbidden zone)
+    // Draw verbotszone (forbidden margin). Allowed area is the inner offset triangle.
     const verbotszoneMeters = (parseFloat(verbotszoneInput.value) || 0) / 100;
     if (verbotszoneMeters > 0) {
       const d = verbotszoneMeters;
@@ -141,7 +141,6 @@
         let a = p1.y - p2.y;
         let b = p2.x - p1.x;
         let c = p1.x * p2.y - p2.x * p1.y;
-        // Ensure inwardPoint is on positive side
         const side = a * inwardPoint.x + b * inwardPoint.y + c;
         if (side < 0) {
           a *= -1; b *= -1; c *= -1;
@@ -178,14 +177,19 @@
 
       const innerPoints = `${innerX1},${innerBaseY} ${innerX2},${innerBaseY} ${innerTopX},${innerTopY}`;
 
-      const verbotszonePolygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-      verbotszonePolygon.setAttribute('points', innerPoints);
-      verbotszonePolygon.setAttribute('fill', 'none');
-      verbotszonePolygon.setAttribute('stroke', '#f00');
-      verbotszonePolygon.setAttribute('stroke-width', '1');
-      // solid red line for forbidden zone
-      // verbotszonePolygon.setAttribute('stroke-dasharray', '5,3');
-      fg.appendChild(verbotszonePolygon);
+      // Shade the forbidden margin (outer area) and highlight the allowed inner triangle
+      const forbiddenOverlay = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+      forbiddenOverlay.setAttribute('points', points);
+      forbiddenOverlay.setAttribute('fill', 'rgba(255,0,0,0.12)');
+      forbiddenOverlay.setAttribute('stroke', 'none');
+      bg.appendChild(forbiddenOverlay);
+
+      const allowedPolygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+      allowedPolygon.setAttribute('points', innerPoints);
+      allowedPolygon.setAttribute('fill', '#cfe8ff');
+      allowedPolygon.setAttribute('stroke', '#f00');
+      allowedPolygon.setAttribute('stroke-width', '1.5');
+      bg.appendChild(allowedPolygon);
     }
 
     // render modules into modulesLayer
@@ -442,82 +446,66 @@
     // Calculate bounds for the module being checked
     const boundsA = getModuleBounds(leftMeters, topMeters, widthMeters, moduleHeightMeters, rotationDegrees);
     
-    // Check roof bounds (left/right)
-    if (boundsA.left < 0 || boundsA.right > roofW) return false;
-    
-    // Check if module is within triangular roof shape
-    // Triangle: (0, roofH) to (roofW, roofH) to (roofW/2, 0)
-    // For a point at height y, the width at that height is: w = roofW * (1 - y/roofH)
-    // The x range at height y is: [(roofW/2) - w/2, (roofW/2) + w/2]
-    
-    // Check all four corners of module bounds
-    const corners = [
-      { x: boundsA.left, y: boundsA.top },
-      { x: boundsA.right, y: boundsA.top },
-      { x: boundsA.left, y: boundsA.bottom },
-      { x: boundsA.right, y: boundsA.bottom }
-    ];
-    
-    for (const corner of corners) {
-      if (corner.y < 0 || corner.y > roofH) return false; // outside height range
-      
-      // At this height, calculate allowed width
-      const heightRatio = corner.y / roofH;
-      const widthAtHeight = roofW * (1 - heightRatio);
-      const centerX = roofW / 2;
-      const minX = centerX - widthAtHeight / 2;
-      const maxX = centerX + widthAtHeight / 2;
-      
-      if (corner.x < minX || corner.x > maxX) return false;
-      
-      // Check verbotszone boundaries (inner triangle)
-      if (verbotszoneMeters > 0) {
-        // Compute inner triangle via parallel offset of each edge by distance d
-        const d = verbotszoneMeters;
-        const A = { x: 0, y: roofH };
-        const B = { x: roofW, y: roofH };
-        const C = { x: roofW / 2, y: 0 };
+    // Check verbotszone boundaries (module must stay inside the inner triangle)
+    // We only check the verbotszone - not the outer roof shape
+    if (verbotszoneMeters > 0) {
+      // Compute inner triangle via parallel offset of each edge by distance d
+      const d = verbotszoneMeters;
+      const A = { x: 0, y: roofH };
+      const B = { x: roofW, y: roofH };
+      const C = { x: roofW / 2, y: 0 };
 
-        const makeOffsetLine = (p1, p2, inwardPoint, offset) => {
-          let a = p1.y - p2.y;
-          let b = p2.x - p1.x;
-          let c = p1.x * p2.y - p2.x * p1.y;
-          const side = a * inwardPoint.x + b * inwardPoint.y + c;
-          if (side < 0) { a *= -1; b *= -1; c *= -1; }
-          const len = Math.hypot(a, b);
-          c -= offset * len;
-          return { a, b, c };
+      const makeOffsetLine = (p1, p2, inwardPoint, offset) => {
+        let a = p1.y - p2.y;
+        let b = p2.x - p1.x;
+        let c = p1.x * p2.y - p2.x * p1.y;
+        const side = a * inwardPoint.x + b * inwardPoint.y + c;
+        if (side < 0) { a *= -1; b *= -1; c *= -1; }
+        const len = Math.hypot(a, b);
+        c -= offset * len;
+        return { a, b, c };
+      };
+
+      const intersect = (L1, L2) => {
+        const det = L1.a * L2.b - L2.a * L1.b;
+        return {
+          x: (L1.b * L2.c - L2.b * L1.c) / det,
+          y: (L1.c * L2.a - L2.c * L1.a) / det
         };
+      };
 
-        const intersect = (L1, L2) => {
-          const det = L1.a * L2.b - L2.a * L1.b;
-          return {
-            x: (L1.b * L2.c - L2.b * L1.c) / det,
-            y: (L1.c * L2.a - L2.c * L1.a) / det
-          };
-        };
+      const inwardTest = { x: roofW / 2, y: roofH / 3 };
+      const lineLeft = makeOffsetLine(A, C, inwardTest, d);
+      const lineRight = makeOffsetLine(B, C, inwardTest, d);
+      const lineBottom = makeOffsetLine(A, B, inwardTest, d);
 
-        const inwardTest = { x: roofW / 2, y: roofH / 3 };
-        const lineLeft = makeOffsetLine(A, C, inwardTest, d);
-        const lineRight = makeOffsetLine(B, C, inwardTest, d);
-        const lineBottom = makeOffsetLine(A, B, inwardTest, d);
+      const P1 = intersect(lineLeft, lineBottom);
+      const P2 = intersect(lineRight, lineBottom);
+      const P3 = intersect(lineLeft, lineRight);
 
-        const P1 = intersect(lineLeft, lineBottom);
-        const P2 = intersect(lineRight, lineBottom);
-        const P3 = intersect(lineLeft, lineRight);
+      // Point-in-triangle test (barycentric via sign of areas)
+      const ptInTri = (p, a, b, c) => {
+        const sign = (p, q, r) => (p.x - r.x) * (q.y - r.y) - (q.x - r.x) * (p.y - r.y);
+        const d1 = sign(p, a, b);
+        const d2 = sign(p, b, c);
+        const d3 = sign(p, c, a);
+        const hasNeg = (d1 < 0) || (d2 < 0) || (d3 < 0);
+        const hasPos = (d1 > 0) || (d2 > 0) || (d3 > 0);
+        return !(hasNeg && hasPos);
+      };
 
-        // Point-in-triangle test (barycentric via sign of areas)
-        const ptInTri = (p, a, b, c) => {
-          const sign = (p, q, r) => (p.x - r.x) * (q.y - r.y) - (q.x - r.x) * (p.y - r.y);
-          const d1 = sign(p, a, b);
-          const d2 = sign(p, b, c);
-          const d3 = sign(p, c, a);
-          const hasNeg = (d1 < 0) || (d2 < 0) || (d3 < 0);
-          const hasPos = (d1 > 0) || (d2 > 0) || (d3 > 0);
-          return !(hasNeg && hasPos);
-        };
+      // Check all four corners of module bounds
+      // Triangle coords: y=0 at apex, y=roofH at base (downward positive)
+      // Module coords: top=0 at base, increases upward
+      const corners = [
+        { x: boundsA.left, y: roofH - boundsA.top },
+        { x: boundsA.right, y: roofH - boundsA.top },
+        { x: boundsA.left, y: roofH - boundsA.bottom },
+        { x: boundsA.right, y: roofH - boundsA.bottom }
+      ];
 
-        if (ptInTri(corner, P1, P2, P3)) return false; // inside forbidden zone
+      for (const corner of corners) {
+        if (!ptInTri(corner, P1, P2, P3)) return false; // outside allowed triangle
       }
     }
     
@@ -646,6 +634,11 @@
     const left = ensureSpacing(desiredLeftMeters, mw);
     const newModule = createModule(left, mw);
     newModule.top = Math.max(0, desiredTopMeters);
+    const positionOk = isPositionValid(newModule.left, newModule.top, mw, newModule.id, newModule.rotation);
+    if (!positionOk) {
+      alert('Modul muss innerhalb des inneren Dreiecks liegen.');
+      return;
+    }
     modules.push(newModule);
     const w = parseFloat(widthInput.value) || 0;
     const h = parseFloat(heightInput.value) || 0;
