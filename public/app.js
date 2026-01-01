@@ -10,6 +10,7 @@
   const modVocInput = document.getElementById('mod-voc');
   const modCurrentInput = document.getElementById('mod-current');
   const mittelstegInput = document.getElementById('mittelstegweite');
+  const verbotszoneInput = document.getElementById('verbotszone');
   const contextMenu = document.getElementById('context-menu');
   const ctxAdd = document.getElementById('ctx-add');
   const ctxDelete = document.getElementById('ctx-delete');
@@ -66,13 +67,16 @@
     let bg = svg.querySelector('#bg-layer');
     let modulesLayer = svg.querySelector('#modules-layer');
     let overlay = svg.querySelector('#overlay-layer');
+    let fg = svg.querySelector('#fg-layer');
     if (!bg) { bg = document.createElementNS('http://www.w3.org/2000/svg','g'); bg.setAttribute('id','bg-layer'); svg.appendChild(bg); }
     if (!modulesLayer) { modulesLayer = document.createElementNS('http://www.w3.org/2000/svg','g'); modulesLayer.setAttribute('id','modules-layer'); svg.appendChild(modulesLayer); }
     if (!overlay) { overlay = document.createElementNS('http://www.w3.org/2000/svg','g'); overlay.setAttribute('id','overlay-layer'); svg.appendChild(overlay); }
+    if (!fg) { fg = document.createElementNS('http://www.w3.org/2000/svg','g'); fg.setAttribute('id','fg-layer'); svg.appendChild(fg); }
 
     // clear and draw background and modules layer (leave overlay intact so ghostRect survives)
     bg.innerHTML = '';
     modulesLayer.innerHTML = '';
+    fg.innerHTML = '';
 
     const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
     polygon.setAttribute('points', points);
@@ -100,7 +104,8 @@
     heightLine.setAttribute('stroke', '#b00');
     heightLine.setAttribute('stroke-width', '1');
     heightLine.setAttribute('stroke-dasharray', '4,3');
-    bg.appendChild(heightLine);
+    // append height line and label to foreground layer so they are always on top
+    fg.appendChild(heightLine);
 
     // label the height (placed at midpoint)
     const midY = (topY + baseY) / 2;
@@ -110,7 +115,7 @@
     heightLabel.setAttribute('fill', '#b00');
     heightLabel.setAttribute('font-size', '12');
     heightLabel.textContent = `${height} m`;
-    bg.appendChild(heightLabel);
+    fg.appendChild(heightLabel);
 
     const textBase = document.createElementNS('http://www.w3.org/2000/svg', 'text');
     textBase.setAttribute('x', (x1 + x2) / 2);
@@ -119,6 +124,69 @@
     textBase.setAttribute('text-anchor', 'middle');
     textBase.textContent = `${width} m`;
     bg.appendChild(textBase);
+
+    // Draw verbotszone (forbidden zone)
+    const verbotszoneMeters = (parseFloat(verbotszoneInput.value) || 0) / 100;
+    if (verbotszoneMeters > 0) {
+      const d = verbotszoneMeters;
+      const roofW = width;
+      const roofH = height;
+      // Triangle vertices (meters)
+      const A = { x: 0, y: roofH };           // bottom-left
+      const B = { x: roofW, y: roofH };       // bottom-right
+      const C = { x: roofW / 2, y: 0 };       // top
+
+      // Helper: build offset line (ax + by + c = 0) with inward normal so that inside is >=0
+      const makeOffsetLine = (p1, p2, inwardPoint, offset) => {
+        let a = p1.y - p2.y;
+        let b = p2.x - p1.x;
+        let c = p1.x * p2.y - p2.x * p1.y;
+        // Ensure inwardPoint is on positive side
+        const side = a * inwardPoint.x + b * inwardPoint.y + c;
+        if (side < 0) {
+          a *= -1; b *= -1; c *= -1;
+        }
+        const len = Math.hypot(a, b);
+        c -= offset * len; // move inward by offset
+        return { a, b, c };
+      };
+
+      // Intersection of two lines ax + by + c = 0
+      const intersect = (L1, L2) => {
+        const det = L1.a * L2.b - L2.a * L1.b;
+        return {
+          x: (L1.b * L2.c - L2.b * L1.c) / det,
+          y: (L1.c * L2.a - L2.c * L1.a) / det
+        };
+      };
+
+      const inwardTest = { x: roofW / 2, y: roofH / 3 }; // inside the triangle
+      const lineLeft = makeOffsetLine(A, C, inwardTest, d);
+      const lineRight = makeOffsetLine(B, C, inwardTest, d);
+      const lineBottom = makeOffsetLine(A, B, inwardTest, d);
+
+      const P1 = intersect(lineLeft, lineBottom);  // left-bottom inner vertex
+      const P2 = intersect(lineRight, lineBottom); // right-bottom inner vertex
+      const P3 = intersect(lineLeft, lineRight);   // top inner vertex
+
+      // Convert to pixels
+      const innerX1 = x1 + P1.x * scale;
+      const innerX2 = x1 + P2.x * scale;
+      const innerTopX = x1 + P3.x * scale;
+      const innerBaseY = baseY - (roofH - P1.y) * scale;
+      const innerTopY = topY + P3.y * scale;
+
+      const innerPoints = `${innerX1},${innerBaseY} ${innerX2},${innerBaseY} ${innerTopX},${innerTopY}`;
+
+      const verbotszonePolygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+      verbotszonePolygon.setAttribute('points', innerPoints);
+      verbotszonePolygon.setAttribute('fill', 'none');
+      verbotszonePolygon.setAttribute('stroke', '#f00');
+      verbotszonePolygon.setAttribute('stroke-width', '1');
+      // solid red line for forbidden zone
+      // verbotszonePolygon.setAttribute('stroke-dasharray', '5,3');
+      fg.appendChild(verbotszonePolygon);
+    }
 
     // render modules into modulesLayer
     renderModulesIntoLayer(modulesLayer, x1, vbH, baseY, scale);
@@ -134,6 +202,7 @@
       voc: parseFloat(modVocInput.value) || 0,
       current: parseFloat(modCurrentInput.value) || 0,
       mittelstegweite: (parseFloat(mittelstegInput.value) || 0) / 100,
+      verbotszone: (parseFloat(verbotszoneInput.value) || 0) / 100,
       modules: modules
     };
     try {
@@ -365,6 +434,7 @@
 
   function isPositionValid(leftMeters, topMeters, widthMeters, excludeId, rotationDegrees = 0) {
     const gap = (parseFloat(mittelstegInput.value) || 0) / 100; // convert cm to m
+    const verbotszoneMeters = (parseFloat(verbotszoneInput.value) || 0) / 100; // convert cm to m
     const roofW = parseFloat(widthInput.value) || 0;
     const roofH = parseFloat(heightInput.value) || 0;
     const moduleHeightMeters = parseFloat(modHeightInput.value) || 0.0;
@@ -399,6 +469,56 @@
       const maxX = centerX + widthAtHeight / 2;
       
       if (corner.x < minX || corner.x > maxX) return false;
+      
+      // Check verbotszone boundaries (inner triangle)
+      if (verbotszoneMeters > 0) {
+        // Compute inner triangle via parallel offset of each edge by distance d
+        const d = verbotszoneMeters;
+        const A = { x: 0, y: roofH };
+        const B = { x: roofW, y: roofH };
+        const C = { x: roofW / 2, y: 0 };
+
+        const makeOffsetLine = (p1, p2, inwardPoint, offset) => {
+          let a = p1.y - p2.y;
+          let b = p2.x - p1.x;
+          let c = p1.x * p2.y - p2.x * p1.y;
+          const side = a * inwardPoint.x + b * inwardPoint.y + c;
+          if (side < 0) { a *= -1; b *= -1; c *= -1; }
+          const len = Math.hypot(a, b);
+          c -= offset * len;
+          return { a, b, c };
+        };
+
+        const intersect = (L1, L2) => {
+          const det = L1.a * L2.b - L2.a * L1.b;
+          return {
+            x: (L1.b * L2.c - L2.b * L1.c) / det,
+            y: (L1.c * L2.a - L2.c * L1.a) / det
+          };
+        };
+
+        const inwardTest = { x: roofW / 2, y: roofH / 3 };
+        const lineLeft = makeOffsetLine(A, C, inwardTest, d);
+        const lineRight = makeOffsetLine(B, C, inwardTest, d);
+        const lineBottom = makeOffsetLine(A, B, inwardTest, d);
+
+        const P1 = intersect(lineLeft, lineBottom);
+        const P2 = intersect(lineRight, lineBottom);
+        const P3 = intersect(lineLeft, lineRight);
+
+        // Point-in-triangle test (barycentric via sign of areas)
+        const ptInTri = (p, a, b, c) => {
+          const sign = (p, q, r) => (p.x - r.x) * (q.y - r.y) - (q.x - r.x) * (p.y - r.y);
+          const d1 = sign(p, a, b);
+          const d2 = sign(p, b, c);
+          const d3 = sign(p, c, a);
+          const hasNeg = (d1 < 0) || (d2 < 0) || (d3 < 0);
+          const hasPos = (d1 > 0) || (d2 > 0) || (d3 > 0);
+          return !(hasNeg && hasPos);
+        };
+
+        if (ptInTri(corner, P1, P2, P3)) return false; // inside forbidden zone
+      }
     }
     
     // Check collisions with all other modules
@@ -750,10 +870,11 @@
     save(w,h);
   });
 
-  drawBtn.addEventListener('click', drawAndSave);
+  if (drawBtn) drawBtn.addEventListener('click', drawAndSave);
   widthInput.addEventListener('change', drawAndSave);
   heightInput.addEventListener('change', drawAndSave);
   mittelstegInput.addEventListener('change', drawAndSave);
+  verbotszoneInput.addEventListener('change', drawAndSave);
   modWidthInput.addEventListener('change', drawAndSave);
   modHeightInput.addEventListener('change', drawAndSave);
   modPowerInput.addEventListener('change', drawAndSave);
@@ -816,6 +937,7 @@
         modVocInput.value = json.voc || modVocInput.value;
         modCurrentInput.value = json.current || modCurrentInput.value;
         mittelstegInput.value = ((json.mittelstegweite || 0) * 100) || mittelstegInput.value;
+        verbotszoneInput.value = ((json.verbotszone || 0) * 100) || verbotszoneInput.value;
         modules = Array.isArray(json.modules) ? json.modules.map(m => ({ id: m.id || (Date.now()+Math.floor(Math.random()*1000)), left: Number(m.left||m.leftMeters||0), width: Number(m.width||m.widthMeters||modWidthInput.value||0), top: Number(m.top||0), rotation: Number(m.rotation||0) })) : modules;
         render(Number(json.width), Number(json.height || heightInput.value));
         updateStringValues();

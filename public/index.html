@@ -1,21 +1,75 @@
 <!doctype html>
 <html lang="de">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Dachfläche (dreieckig)</title>
   <style>
-    html, body { height: 100%; margin: 0; }
-    body{font-family: Arial, Helvetica, sans-serif; height:100vh; box-sizing:border-box}
-    #layout { display:flex; height:100%; }
-    #visual { flex:1; padding:20px; box-sizing:border-box }
-    #sidebar { width:360px; padding:20px; box-sizing:border-box; border-left:1px solid #eee; display:flex; flex-direction:column; gap:12px; overflow:auto }
-    label{display:block; margin-bottom:6px}
-    .controls-stack { display:flex; flex-direction:column; gap:8px }
-    #controls { margin:0 }
-    #roof{border:1px solid #ddd; background:#f9f9f9; width:100%; height:100%; display:block}
-    #context-menu { z-index:1000 }
-    input[type="number"] { width:80px; }
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+    }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      height: 100vh;
+      box-sizing: border-box
+    }
+
+    #layout {
+      display: flex;
+      height: 100%;
+    }
+
+    #visual {
+      flex: 1;
+      padding: 20px;
+      box-sizing: border-box
+    }
+
+    #sidebar {
+      width: 360px;
+      padding: 20px;
+      box-sizing: border-box;
+      border-left: 1px solid #eee;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow: auto
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px
+    }
+
+    .controls-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 8px
+    }
+
+    #controls {
+      margin: 0
+    }
+
+    #roof {
+      border: 1px solid #ddd;
+      background: #f9f9f9;
+      width: 100%;
+      height: 100%;
+      display: block
+    }
+
+    #context-menu {
+      z-index: 1000
+    }
+
+    input[type="number"] {
+      width: 80px;
+    }
   </style>
 </head>
 
@@ -26,38 +80,45 @@
     </div>
     <div id="sidebar">
       <div class="controls-stack" id="controls">
-        <fieldset style="padding:8px"><legend>Dachfläche (dreieckig)</legend>
+        <fieldset style="padding:8px">
+          <legend>Dachfläche (dreieckig)</legend>
           <label>Breite (m): <input id="width" type="number" value="10" min="0" step="0.1"></label>
           <label>Höhe (m): <input id="height" type="number" value="5" min="0" step="0.1"></label>
-          <button id="draw">Zeichnen</button>
+          <label>Verbotszone (cm): <input id="verbotszone" type="number" value="20" min="0" step="1"></label>
           <div>Fläche: <strong id="area">-</strong> m²</div>
         </fieldset>
 
-        <fieldset style="padding:8px"><legend>Solarmodul</legend>
+        <fieldset style="padding:8px">
+          <legend>Solarmodul</legend>
           <label>Breite (m): <input id="mod-width" type="number" value="1" min="0" step="0.01"></label>
           <label>Höhe (m): <input id="mod-height" type="number" value="1" min="0" step="0.01"></label>
           <hr>
-          <label>Leistung (W): <input id="mod-power" type="number" value="300" min="0" step="1"></label>
+          <label>Leistung (W): <input id="mod-power" type="number" value="300" min="0" step="5"></label>
           <label>V<sub>oc</sub> (V): <input id="mod-voc" type="number" value="40" min="0" step="0.1"></label>
           <label>I (A): <input id="mod-current" type="number" value="8" min="0" step="0.01"></label>
         </fieldset>
-        <fieldset style="padding:8px"><legend>Abstände</legend>
+        <fieldset style="padding:8px">
+          <legend>Abstände</legend>
           <label>Mittelstegweite (cm): <input id="mittelstegweite" type="number" value="2" min="0" step="0.1"></label>
         </fieldset>
-        <fieldset style="padding:8px"><legend>Stringwerte</legend>
+        <fieldset style="padding:8px">
+          <legend>Stringwerte</legend>
           <label>Gesamtleistung (W): <input id="Gesamtleistung" type="number" readonly value=""></label>
           <label>V<sub>oc</sub> (V): <input id="voc" type="number" readonly value=""></label>
         </fieldset>
-        <fieldset style="padding:8px"><legend>Selektierte Module</legend>
+        <fieldset style="padding:8px">
+          <legend>Selektierte Module</legend>
           <label>X Position (m): <input id="sel-x" type="number" step="0.01"></label>
           <label>Y Position (m): <input id="sel-y" type="number" step="0.01"></label>
         </fieldset>
       </div>
-      <div style="margin-top:auto;font-size:12px;color:#666">Klicke mit der rechten Maustaste auf das Dach, um Module hinzuzufügen.</div>
+      <div style="margin-top:auto;font-size:12px;color:#666">Klicke mit der rechten Maustaste auf das Dach, um Module
+        hinzuzufügen.</div>
     </div>
   </div>
 
-  <div id="context-menu" style="position:fixed;display:none;padding:8px;background:#fff;border:1px solid #ccc;box-shadow:0 2px 6px rgba(0,0,0,0.15);z-index:1000">
+  <div id="context-menu"
+    style="position:fixed;display:none;padding:8px;background:#fff;border:1px solid #ccc;box-shadow:0 2px 6px rgba(0,0,0,0.15);z-index:1000">
     <div id="ctx-add" style="padding:4px;cursor:pointer">Modul hier hinzufügen</div>
     <div id="ctx-rotate" style="padding:4px;cursor:pointer;display:none">Modul drehen</div>
     <div id="ctx-delete" style="padding:4px;cursor:pointer;color:#b00">Modul löschen</div>
@@ -65,4 +126,5 @@
 
   <script src="/app.js"></script>
 </body>
+
 </html>
