@@ -634,11 +634,6 @@
     const left = ensureSpacing(desiredLeftMeters, mw);
     const newModule = createModule(left, mw);
     newModule.top = Math.max(0, desiredTopMeters);
-    const positionOk = isPositionValid(newModule.left, newModule.top, mw, newModule.id, newModule.rotation);
-    if (!positionOk) {
-      alert('Modul muss innerhalb des inneren Dreiecks liegen.');
-      return;
-    }
     modules.push(newModule);
     const w = parseFloat(widthInput.value) || 0;
     const h = parseFloat(heightInput.value) || 0;
