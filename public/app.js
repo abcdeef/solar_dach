@@ -16,9 +16,13 @@
   const ctxRotate = document.getElementById('ctx-rotate');
   const gesamtleistungEl = document.getElementById('Gesamtleistung');
   const vocEl = document.getElementById('voc');
+  const selXInput = document.getElementById('sel-x');
+  const selYInput = document.getElementById('sel-y');
 
   let modules = []; // stored as {id, leftMeters, widthMeters}
+  let selectedModules = new Set(); // IDs of selected modules
   let dragging = null;
+  let wasDragged = false; // Track if pointer moved during drag
   let lastScale = 1;
   let lastX1 = 0;
   let lastBaseY = 0;
@@ -161,6 +165,31 @@
     
     gesamtleistungEl.value = totalPower;
     vocEl.value = totalVoc;
+  }
+
+  function updateSelectionUI() {
+    if (selectedModules.size === 0) {
+      selXInput.value = '';
+      selYInput.value = '';
+      selXInput.disabled = true;
+      selYInput.disabled = true;
+      return;
+    }
+    
+    selXInput.disabled = false;
+    selYInput.disabled = false;
+    
+    const selectedList = Array.from(selectedModules).map(id => findModuleById(id)).filter(m => m);
+    
+    // Check if all X values are the same
+    const xValues = selectedList.map(m => Number(m.left));
+    const allXSame = xValues.every(v => v === xValues[0]);
+    selXInput.value = allXSame ? xValues[0].toFixed(2) : '<...>';
+    
+    // Check if all Y values are the same
+    const yValues = selectedList.map(m => Number(m.top || 0));
+    const allYSame = yValues.every(v => v === yValues[0]);
+    selYInput.value = allYSame ? yValues[0].toFixed(2) : '<...>';
   }
 
   // Module helpers
@@ -433,8 +462,13 @@
       rect.setAttribute('y', rectY);
       rect.setAttribute('width', pxWidth);
       rect.setAttribute('height', pxHeight);
-      rect.setAttribute('fill', '#ffd59e');
-      rect.setAttribute('stroke', '#b36b00');
+      
+      // Different colors for selected vs unselected modules
+      const isSelected = selectedModules.has(String(m.id));
+      rect.setAttribute('fill', isSelected ? '#9ecfff' : '#ffd59e');
+      rect.setAttribute('stroke', isSelected ? '#0066cc' : '#b36b00');
+      rect.setAttribute('stroke-width', isSelected ? '2' : '1');
+      
       rect.setAttribute('data-id', m.id);
       rect.style.cursor = 'grab';
       // Apply rotation transform around center of rect
@@ -529,10 +563,12 @@
   svg.addEventListener('pointerdown', (ev) => {
     const target = ev.target;
     if (target && target.tagName === 'rect' && target.dataset && target.dataset.id) {
-      ev.preventDefault();
       const id = target.dataset.id;
       const m = findModuleById(id);
       if (!m) return;
+      
+      wasDragged = false; // Reset drag tracking
+      
       const pt = svgPoint(ev.clientX, ev.clientY);
       dragStartSvgX = pt.x;
       dragStartSvgY = pt.y;
@@ -575,7 +611,17 @@
   svg.addEventListener('pointermove', (ev) => {
     if (!dragging) return;
     ev.preventDefault();
+    
     const pt = svgPoint(ev.clientX, ev.clientY);
+    
+    // Check if mouse moved enough to be considered a drag (3px threshold)
+    const dx = pt.x - dragging.startSvgX;
+    const dy = pt.y - dragging.startSvgY;
+    const distance = Math.sqrt(dx*dx + dy*dy);
+    if (distance > 3) {
+      wasDragged = true; // Mark that dragging occurred
+    }
+    
     // update ghost rect position directly (follow pointer)
     if (ghostRect) {
       const pxLeft = pt.x - dragging.offsetX;
@@ -641,6 +687,9 @@
   svg.addEventListener('pointerup', (ev) => {
     if (!dragging) return;
     try { svg.releasePointerCapture(ev.pointerId); } catch(e) {}
+    
+    const draggedModuleId = dragging.id;
+    
     // compute final module position from ghost position
     const pt = svgPoint(ev.clientX, ev.clientY);
     const m = findModuleById(dragging.id);
@@ -670,6 +719,18 @@
     dragging = null;
     // remove ghost and re-render final state
     if (ghostRect) { try { ghostRect.remove(); } catch(e) {} ghostRect = null; }
+    
+    // Handle selection if it was a click (not a drag)
+    if (!wasDragged) {
+      const id = String(draggedModuleId);
+      if (selectedModules.has(id)) {
+        selectedModules.delete(id);
+      } else {
+        selectedModules.add(id);
+      }
+      updateSelectionUI();
+    }
+    
     const w = parseFloat(widthInput.value) || 0;
     const h = parseFloat(heightInput.value) || 0;
     render(w,h);
@@ -698,6 +759,42 @@
   modPowerInput.addEventListener('change', drawAndSave);
   modVocInput.addEventListener('change', drawAndSave);
   modCurrentInput.addEventListener('change', drawAndSave);
+  
+  // Selection position input handlers
+  selXInput.addEventListener('change', () => {
+    const val = selXInput.value;
+    if (val === '<...>' || val === '') return;
+    const newX = parseFloat(val);
+    if (!isFinite(newX)) return;
+    
+    Array.from(selectedModules).forEach(id => {
+      const m = findModuleById(id);
+      if (m) m.left = Math.max(0, newX);
+    });
+    
+    const w = parseFloat(widthInput.value) || 0;
+    const h = parseFloat(heightInput.value) || 0;
+    render(w, h);
+    save(w, h);
+  });
+  
+  selYInput.addEventListener('change', () => {
+    const val = selYInput.value;
+    if (val === '<...>' || val === '') return;
+    const newY = parseFloat(val);
+    if (!isFinite(newY)) return;
+    
+    Array.from(selectedModules).forEach(id => {
+      const m = findModuleById(id);
+      if (m) m.top = newY;
+    });
+    
+    const w = parseFloat(widthInput.value) || 0;
+    const h = parseFloat(heightInput.value) || 0;
+    render(w, h);
+    save(w, h);
+  });
+  
   window.addEventListener('resize', () => {
     const w = parseFloat(widthInput.value) || 0;
     const h = parseFloat(heightInput.value) || 0;
@@ -722,11 +819,13 @@
         modules = Array.isArray(json.modules) ? json.modules.map(m => ({ id: m.id || (Date.now()+Math.floor(Math.random()*1000)), left: Number(m.left||m.leftMeters||0), width: Number(m.width||m.widthMeters||modWidthInput.value||0), top: Number(m.top||0), rotation: Number(m.rotation||0) })) : modules;
         render(Number(json.width), Number(json.height || heightInput.value));
         updateStringValues();
+        updateSelectionUI();
       } else {
         drawAndSave();
       }
     } catch (e) {
       drawAndSave();
     }
+    updateSelectionUI(); // Initialize selection UI
   })();
 })();
