@@ -289,7 +289,7 @@
     return { left: snappedLeft, top: snappedTop };
   }
 
-  function snapToHeightLine(leftMeters, widthMeters, snapThreshold = 0.1) {
+  function snapToHeightLine(leftMeters, widthMeters, snapThreshold = 0.2) {
     // Snap module center to the height line (vertical center of roof) if within threshold
     const roofWidth = parseFloat(widthInput.value) || 0;
     const roofCenter = roofWidth / 2;
@@ -594,7 +594,7 @@
       targetTopMeters = snapped.top;
       
       // Apply height line snapping
-      targetLeftMeters = snapToHeightLine(targetLeftMeters, mw, 0.1);
+      targetLeftMeters = snapToHeightLine(targetLeftMeters, mw, 0.2);
       
       // Check collision
       const isValid = isPositionValid(targetLeftMeters, targetTopMeters, mw, dragging.id, dragging.moduleRotation);
@@ -655,7 +655,7 @@
       const desiredTopMeters = (lastBaseY - rectY - pxHeight) / lastScale;
       
       // Apply height line snapping
-      const snappedLeftMeters = snapToHeightLine(desiredLeftMeters, mw, 0.1);
+      const snappedLeftMeters = snapToHeightLine(desiredLeftMeters, mw, 0.2);
       
       // Check if position is valid with collision detection
       if (isPositionValid(snappedLeftMeters, desiredTopMeters, mw, dragging.id, dragging.moduleRotation)) {
