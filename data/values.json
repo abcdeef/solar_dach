@@ -1,0 +1,30 @@
+{
+  "width": 11.9,
+  "height": 6.5,
+  "area": 38.675000000000004,
+  "moduleWidth": 1.134,
+  "moduleHeight": 1.722,
+  "rotation": 0,
+  "power": 435,
+  "voc": 435,
+  "current": 38.4,
+  "mittelstegweite": 0.02,
+  "endweite": 0.2,
+  "modules": [
+    {
+      "id": 1767284747228,
+      "left": 5.451250000000001,
+      "width": 1.134,
+      "top": 0.16013211059570243,
+      "rotation": 0
+    },
+    {
+      "id": 1767284748207,
+      "left": 6.9034,
+      "width": 1.134,
+      "top": 0.19514866638183526,
+      "rotation": 90
+    }
+  ],
+  "updatedAt": "2026-01-01T16:26:08.177Z"
+}

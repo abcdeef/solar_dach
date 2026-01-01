@@ -1,0 +1,12 @@
+{
+  "name": "solar-dach",
+  "version": "1.0.0",
+  "description": "Einfache Node.js Webanwendung: dreieckige Dachfläche zeichnen",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
