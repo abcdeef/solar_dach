@@ -53,7 +53,6 @@ app.post('/api/values', async (req, res) => {
       voc: Number(body.voc) || 0,
       current: Number(body.current) || 0,
       mittelstegweite: Number(body.mittelstegweite) || 0,
-      endweite: Number(body.endweite) || 0,
       modules: Array.isArray(body.modules) ? body.modules : [],
       updatedAt: new Date().toISOString()
     };

@@ -10,11 +10,12 @@
   const modVocInput = document.getElementById('mod-voc');
   const modCurrentInput = document.getElementById('mod-current');
   const mittelstegInput = document.getElementById('mittelstegweite');
-  const endweiteInput = document.getElementById('endweite');
   const contextMenu = document.getElementById('context-menu');
   const ctxAdd = document.getElementById('ctx-add');
   const ctxDelete = document.getElementById('ctx-delete');
   const ctxRotate = document.getElementById('ctx-rotate');
+  const gesamtleistungEl = document.getElementById('Gesamtleistung');
+  const vocEl = document.getElementById('voc');
 
   let modules = []; // stored as {id, leftMeters, widthMeters}
   let dragging = null;
@@ -84,13 +85,28 @@
     baseLine.setAttribute('stroke', '#444');
     bg.appendChild(baseLine);
 
-    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    text.setAttribute('x', topX);
-    text.setAttribute('y', topY - 8);
-    text.setAttribute('fill', '#222');
-    text.setAttribute('text-anchor', 'middle');
-    text.textContent = `${height} m`;
-    bg.appendChild(text);
+    // (removed top label) -- height is shown by the dashed line and midpoint label
+
+    // draw altitude (height) line from apex to base and label it
+    const heightLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    heightLine.setAttribute('x1', topX);
+    heightLine.setAttribute('y1', topY);
+    heightLine.setAttribute('x2', topX);
+    heightLine.setAttribute('y2', baseY);
+    heightLine.setAttribute('stroke', '#b00');
+    heightLine.setAttribute('stroke-width', '1');
+    heightLine.setAttribute('stroke-dasharray', '4,3');
+    bg.appendChild(heightLine);
+
+    // label the height (placed at midpoint)
+    const midY = (topY + baseY) / 2;
+    const heightLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    heightLabel.setAttribute('x', topX + 8);
+    heightLabel.setAttribute('y', midY);
+    heightLabel.setAttribute('fill', '#b00');
+    heightLabel.setAttribute('font-size', '12');
+    heightLabel.textContent = `${height} m`;
+    bg.appendChild(heightLabel);
 
     const textBase = document.createElementNS('http://www.w3.org/2000/svg', 'text');
     textBase.setAttribute('x', (x1 + x2) / 2);
@@ -112,10 +128,9 @@
       moduleHeight: parseFloat(modHeightInput.value) || 0,
       power: parseFloat(modPowerInput.value) || 0,
       voc: parseFloat(modVocInput.value) || 0,
-      current: parseFloat(modCurrentInput.value) || 0
-      ,mittelstegweite: parseFloat(mittelstegInput.value) || 0
-      ,endweite: parseFloat(endweiteInput.value) || 0
-      ,modules: modules
+      current: parseFloat(modCurrentInput.value) || 0,
+      mittelstegweite: (parseFloat(mittelstegInput.value) || 0) / 100,
+      modules: modules
     };
     try {
       await fetch('/api/values', {
@@ -132,7 +147,20 @@
     const width = parseFloat(widthInput.value) || 0;
     const height = parseFloat(heightInput.value) || 0;
     render(width, height);
+    updateStringValues();
     if (width > 0 && height > 0) save(width, height);
+  }
+
+  function updateStringValues() {
+    const moduleCount = modules.length;
+    const modulePower = parseFloat(modPowerInput.value) || 0;
+    const moduleVoc = parseFloat(modVocInput.value) || 0;
+    
+    const totalPower = moduleCount * modulePower;
+    const totalVoc = moduleCount * moduleVoc;
+    
+    gesamtleistungEl.value = totalPower;
+    vocEl.value = totalVoc;
   }
 
   // Module helpers
@@ -182,6 +210,99 @@
     return Math.max(minLeft, Math.min(maxLeft, desiredLeft));
   }
 
+  function snapToModules(leftMeters, topMeters, widthMeters, heightMeters, excludeId, snapThreshold = 0.05) {
+    // Try to snap to edges of other modules
+    let snappedLeft = leftMeters;
+    let snappedTop = topMeters;
+    let minDistLeft = snapThreshold;
+    let minDistTop = snapThreshold;
+    
+    const moduleHeightMeters = parseFloat(modHeightInput.value) || 0.0;
+    const rightMeters = leftMeters + widthMeters;
+    const bottomMeters = topMeters + heightMeters;
+    
+    for (const m of modules) {
+      if (String(m.id) === String(excludeId)) continue;
+      
+      const mWidth = m.width || parseFloat(modWidthInput.value) || 0;
+      const mTop = Number(m.top) || 0;
+      const mRight = m.left + mWidth;
+      const mBottom = mTop + moduleHeightMeters;
+      
+      // Snap left edge to other module's right edge
+      const distToRight = Math.abs(leftMeters - mRight);
+      if (distToRight < minDistLeft) {
+        minDistLeft = distToRight;
+        snappedLeft = mRight;
+      }
+      
+      // Snap right edge to other module's left edge
+      const distToLeft = Math.abs(rightMeters - m.left);
+      if (distToLeft < minDistLeft) {
+        minDistLeft = distToLeft;
+        snappedLeft = m.left - widthMeters;
+      }
+      
+      // Snap left edges together
+      const distLeftToLeft = Math.abs(leftMeters - m.left);
+      if (distLeftToLeft < minDistLeft) {
+        minDistLeft = distLeftToLeft;
+        snappedLeft = m.left;
+      }
+      
+      // Snap right edges together
+      const distRightToRight = Math.abs(rightMeters - mRight);
+      if (distRightToRight < minDistLeft) {
+        minDistLeft = distRightToRight;
+        snappedLeft = mRight - widthMeters;
+      }
+      
+      // Snap top edge to other module's bottom edge
+      const distToBottom = Math.abs(topMeters - mBottom);
+      if (distToBottom < minDistTop) {
+        minDistTop = distToBottom;
+        snappedTop = mBottom;
+      }
+      
+      // Snap bottom edge to other module's top edge
+      const distToTop = Math.abs(bottomMeters - mTop);
+      if (distToTop < minDistTop) {
+        minDistTop = distToTop;
+        snappedTop = mTop - heightMeters;
+      }
+      
+      // Snap top edges together
+      const distTopToTop = Math.abs(topMeters - mTop);
+      if (distTopToTop < minDistTop) {
+        minDistTop = distTopToTop;
+        snappedTop = mTop;
+      }
+      
+      // Snap bottom edges together
+      const distBottomToBottom = Math.abs(bottomMeters - mBottom);
+      if (distBottomToBottom < minDistTop) {
+        minDistTop = distBottomToBottom;
+        snappedTop = mBottom - heightMeters;
+      }
+    }
+    
+    return { left: snappedLeft, top: snappedTop };
+  }
+
+  function snapToHeightLine(leftMeters, widthMeters, snapThreshold = 0.1) {
+    // Snap module center to the height line (vertical center of roof) if within threshold
+    const roofWidth = parseFloat(widthInput.value) || 0;
+    const roofCenter = roofWidth / 2;
+    const moduleCenter = leftMeters + widthMeters / 2;
+    
+    const distanceToLine = Math.abs(moduleCenter - roofCenter);
+    if (distanceToLine < snapThreshold) {
+      // Snap: place module so its center aligns with roof center
+      return roofCenter - widthMeters / 2;
+    }
+    return leftMeters;
+  }
+
   function getModuleBounds(leftMeters, topMeters, widthMeters, heightMeters, rotationDegrees) {
     // Calculate axis-aligned bounding box for a rotated rectangle
     const centerX = leftMeters + widthMeters / 2;
@@ -214,15 +335,42 @@
   }
 
   function isPositionValid(leftMeters, topMeters, widthMeters, excludeId, rotationDegrees = 0) {
-    const gap = parseFloat(mittelstegInput.value) || 0;
+    const gap = (parseFloat(mittelstegInput.value) || 0) / 100; // convert cm to m
     const roofW = parseFloat(widthInput.value) || 0;
+    const roofH = parseFloat(heightInput.value) || 0;
     const moduleHeightMeters = parseFloat(modHeightInput.value) || 0.0;
     
     // Calculate bounds for the module being checked
     const boundsA = getModuleBounds(leftMeters, topMeters, widthMeters, moduleHeightMeters, rotationDegrees);
     
-    // Check roof bounds
+    // Check roof bounds (left/right)
     if (boundsA.left < 0 || boundsA.right > roofW) return false;
+    
+    // Check if module is within triangular roof shape
+    // Triangle: (0, roofH) to (roofW, roofH) to (roofW/2, 0)
+    // For a point at height y, the width at that height is: w = roofW * (1 - y/roofH)
+    // The x range at height y is: [(roofW/2) - w/2, (roofW/2) + w/2]
+    
+    // Check all four corners of module bounds
+    const corners = [
+      { x: boundsA.left, y: boundsA.top },
+      { x: boundsA.right, y: boundsA.top },
+      { x: boundsA.left, y: boundsA.bottom },
+      { x: boundsA.right, y: boundsA.bottom }
+    ];
+    
+    for (const corner of corners) {
+      if (corner.y < 0 || corner.y > roofH) return false; // outside height range
+      
+      // At this height, calculate allowed width
+      const heightRatio = corner.y / roofH;
+      const widthAtHeight = roofW * (1 - heightRatio);
+      const centerX = roofW / 2;
+      const minX = centerX - widthAtHeight / 2;
+      const maxX = centerX + widthAtHeight / 2;
+      
+      if (corner.x < minX || corner.x > maxX) return false;
+    }
     
     // Check collisions with all other modules
     for (const m of modules) {
@@ -348,6 +496,7 @@
     const w = parseFloat(widthInput.value) || 0;
     const h = parseFloat(heightInput.value) || 0;
     render(w, h);
+    updateStringValues();
     save(w,h);
   });
 
@@ -358,6 +507,7 @@
     const w = parseFloat(widthInput.value) || 0;
     const h = parseFloat(heightInput.value) || 0;
     render(w,h);
+    updateStringValues();
     save(w,h);
   });
 
@@ -371,6 +521,7 @@
     const w = parseFloat(widthInput.value) || 0;
     const h = parseFloat(heightInput.value) || 0;
     render(w,h);
+    updateStringValues();
     save(w,h);
   });
 
@@ -434,32 +585,43 @@
       const mw = dragging.moduleWidth || parseFloat(modWidthInput.value) || 0;
       const moduleHeightMeters = parseFloat(modHeightInput.value) || 0.0;
       const pxHeight = moduleHeightMeters * lastScale;
-      const targetLeftMeters = pxToMeters(pxLeft - lastX1);
-      const targetTopMeters = (lastBaseY - pxTop - pxHeight) / lastScale;
+      let targetLeftMeters = pxToMeters(pxLeft - lastX1);
+      let targetTopMeters = (lastBaseY - pxTop - pxHeight) / lastScale;
+      
+      // Apply snapping
+      const snapped = snapToModules(targetLeftMeters, targetTopMeters, mw, moduleHeightMeters, dragging.id);
+      targetLeftMeters = snapped.left;
+      targetTopMeters = snapped.top;
+      
+      // Apply height line snapping
+      targetLeftMeters = snapToHeightLine(targetLeftMeters, mw, 0.1);
       
       // Check collision
-      const isValid = isPositionValid(targetLeftMeters, Math.max(0, targetTopMeters), mw, dragging.id, dragging.moduleRotation);
+      const isValid = isPositionValid(targetLeftMeters, targetTopMeters, mw, dragging.id, dragging.moduleRotation);
       
       // Update last valid position if current position is valid
       const m = findModuleById(dragging.id);
       if (isValid) {
         dragging.lastValidLeft = targetLeftMeters;
-        dragging.lastValidTop = Math.max(0, targetTopMeters);
+        dragging.lastValidTop = targetTopMeters;
       }
       
       // Set color based on validity
       ghostRect.setAttribute('fill', isValid ? '#ffd59e' : '#ff6b6b');
       
-      ghostRect.setAttribute('x', pxLeft);
-      ghostRect.setAttribute('y', pxTop);
+      // Update ghost position with snapped coordinates
+      const snappedPxLeft = lastX1 + (targetLeftMeters * lastScale);
+      const snappedPxTop = lastBaseY - pxHeight - (targetTopMeters * lastScale);
+      
+      ghostRect.setAttribute('x', snappedPxLeft);
+      ghostRect.setAttribute('y', snappedPxTop);
       // update transform center for rotation to follow the new position
       if (m) {
         const rotation = Number(m.rotation) || 0;
         if (rotation !== 0) {
-          const pxWidth0 = (m.width || parseFloat(modWidthInput.value) || 0) * lastScale;
-          const pxHeight0 = moduleHeightMeters * lastScale;
-          const centerX = pxLeft + pxWidth0 / 2;
-          const centerY = pxTop + pxHeight0 / 2;
+          const pxWidth0 = mw * lastScale;
+          const centerX = snappedPxLeft + pxWidth0 / 2;
+          const centerY = snappedPxTop + pxHeight / 2;
           ghostRect.setAttribute('transform', `rotate(${rotation} ${centerX} ${centerY})`);
         } else {
           ghostRect.removeAttribute('transform');
@@ -492,19 +654,18 @@
       const rectY = pt.y - dragging.offsetY;
       const desiredTopMeters = (lastBaseY - rectY - pxHeight) / lastScale;
       
+      // Apply height line snapping
+      const snappedLeftMeters = snapToHeightLine(desiredLeftMeters, mw, 0.1);
+      
       // Check if position is valid with collision detection
-      if (isPositionValid(desiredLeftMeters, Math.max(0, desiredTopMeters), mw, dragging.id, dragging.moduleRotation)) {
-        m.left = Math.max(0, Math.min(desiredLeftMeters, (parseFloat(widthInput.value)||0) - mw));
-        m.top = Math.max(0, desiredTopMeters);
+      if (isPositionValid(snappedLeftMeters, desiredTopMeters, mw, dragging.id, dragging.moduleRotation)) {
+        m.left = Math.max(0, Math.min(snappedLeftMeters, (parseFloat(widthInput.value)||0) - mw));
+        m.top = desiredTopMeters;
       } else {
         // Position invalid, use last valid position
         m.left = dragging.lastValidLeft;
         m.top = dragging.lastValidTop;
       }
-      
-      // Ensure top is within bounds
-      const maxTopMeters = Math.max(0, (lastBaseY - moduleHeightMeters*lastScale) / lastScale);
-      m.top = Math.max(0, Math.min(maxTopMeters, m.top));
     }
     dragging = null;
     // remove ghost and re-render final state
@@ -512,6 +673,7 @@
     const w = parseFloat(widthInput.value) || 0;
     const h = parseFloat(heightInput.value) || 0;
     render(w,h);
+    updateStringValues();
     save(w,h);
   });
 
@@ -523,13 +685,14 @@
     const w = parseFloat(widthInput.value) || 0;
     const h = parseFloat(heightInput.value) || 0;
     render(w,h);
+    updateStringValues();
+    save(w,h);
   });
 
   drawBtn.addEventListener('click', drawAndSave);
   widthInput.addEventListener('change', drawAndSave);
   heightInput.addEventListener('change', drawAndSave);
   mittelstegInput.addEventListener('change', drawAndSave);
-  endweiteInput.addEventListener('change', drawAndSave);
   modWidthInput.addEventListener('change', drawAndSave);
   modHeightInput.addEventListener('change', drawAndSave);
   modPowerInput.addEventListener('change', drawAndSave);
@@ -552,14 +715,13 @@
         heightInput.value = json.height || heightInput.value;
         modWidthInput.value = json.moduleWidth || modWidthInput.value;
         modHeightInput.value = json.moduleHeight || modHeightInput.value;
-        modRotationInput.value = json.rotation || modRotationInput.value;
         modPowerInput.value = json.power || modPowerInput.value;
         modVocInput.value = json.voc || modVocInput.value;
         modCurrentInput.value = json.current || modCurrentInput.value;
-        mittelstegInput.value = json.mittelstegweite || mittelstegInput.value;
-        endweiteInput.value = json.endweite || endweiteInput.value;
+        mittelstegInput.value = ((json.mittelstegweite || 0) * 100) || mittelstegInput.value;
         modules = Array.isArray(json.modules) ? json.modules.map(m => ({ id: m.id || (Date.now()+Math.floor(Math.random()*1000)), left: Number(m.left||m.leftMeters||0), width: Number(m.width||m.widthMeters||modWidthInput.value||0), top: Number(m.top||0), rotation: Number(m.rotation||0) })) : modules;
         render(Number(json.width), Number(json.height || heightInput.value));
+        updateStringValues();
       } else {
         drawAndSave();
       }
