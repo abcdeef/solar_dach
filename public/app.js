@@ -19,6 +19,7 @@
   const vocEl = document.getElementById('voc');
   const selXInput = document.getElementById('sel-x');
   const selYInput = document.getElementById('sel-y');
+  const resetBtn = document.getElementById('reset-modules');
 
   let modules = []; // stored as {id, leftMeters, widthMeters}
   let selectedModules = new Set(); // IDs of selected modules
@@ -868,6 +869,18 @@
   modPowerInput.addEventListener('change', drawAndSave);
   modVocInput.addEventListener('change', drawAndSave);
   modCurrentInput.addEventListener('change', drawAndSave);
+  if (resetBtn) {
+    resetBtn.addEventListener('click', () => {
+      modules = [];
+      selectedModules.clear();
+      const w = parseFloat(widthInput.value) || 0;
+      const h = parseFloat(heightInput.value) || 0;
+      render(w, h);
+      updateStringValues();
+      updateSelectionUI();
+      save(w, h);
+    });
+  }
   
   // Selection position input handlers
   selXInput.addEventListener('change', () => {
