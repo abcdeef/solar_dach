@@ -1,0 +1,27 @@
+stages:
+  - build
+
+build_multi_arch:
+  stage: build
+  image: docker:24.0.5
+  services:
+    - docker:24.0.5-dind
+
+  variables:
+    DOCKER_DRIVER: overlay2
+
+  before_script:
+    - apk add --no-cache qemu-user-static
+    - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+    - docker buildx create --use
+
+  script:
+    - echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+    - docker buildx build \
+        --platform linux/amd64,linux/arm64 \
+        --push \
+        -t $DOCKERHUB_USERNAME/solar_dach:latest \
+        .
+
+  only:
+    - main
