@@ -4,9 +4,9 @@ stages:
 build_multi_arch:
   stage: build
   script:
-    # QEMU installieren (für ARM Builds)
-    - sudo apt-get update
-    - sudo apt-get install -y qemu-user-static
+    # QEMU für Multi-Arch Builds aktivieren.
+    # Hinweis: Auf Shell-Runnern ist oft kein `sudo` verfügbar.
+    # Der folgende Container registriert die benötigten QEMU-Handler im Kernel.
 
     # Docker Buildx aktivieren
     - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
