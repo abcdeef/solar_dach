@@ -81,9 +81,22 @@
     <div id="sidebar">
       <div class="controls-stack" id="controls">
         <fieldset style="padding:8px">
+          <legend>Dachform</legend>
+          <label>Form:
+            <select id="dachform" style="width:120px">
+              <option value="zeltdach">Zeltdach</option>
+              <option value="walmdach">Walmdach</option>
+              <option value="flachdach">Flachdach</option>
+            </select>
+          </label>
+        </fieldset>
+        <fieldset style="padding:8px">
           <legend>Dachfläche (dreieckig)</legend>
           <label>Breite (m): <input id="width" type="number" value="10" min="0" step="0.1"></label>
           <label>Höhe (m): <input id="height" type="number" value="5" min="0" step="0.1"></label>
+          <div id="first-length-row" style="display:none">
+            <label>Firstlänge (m): <input id="first-length" type="number" value="0" min="0" step="0.1"></label>
+          </div>
           <label>Verbotszone (cm): <input id="verbotszone" type="number" value="20" min="0" step="1"></label>
           <div>Fläche: <strong id="area">-</strong> m²</div>
         </fieldset>

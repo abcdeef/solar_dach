@@ -1,0 +1,880 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="594mm"
+   height="420mm"
+   viewBox="0 0 2245.0394 1587.4016"
+   role="img"
+   aria-label="Haus Energie Dashboard (Vektor)"
+   version="1.1"
+   id="svg1371"
+   sodipodi:docname="haus-dashboard.svg"
+   inkscape:version="1.2.2 (b0a84865, 2022-12-01)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1373"
+     pagecolor="#505050"
+     bordercolor="#ffffff"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="1"
+     inkscape:deskcolor="#505050"
+     showgrid="false"
+     inkscape:zoom="0.86474713"
+     inkscape:cx="1145.9998"
+     inkscape:cy="646.43175"
+     inkscape:window-width="2560"
+     inkscape:window-height="1382"
+     inkscape:window-x="1800"
+     inkscape:window-y="30"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="svg1371"
+     inkscape:document-units="mm" />
+  <defs
+     id="defs1089">
+    <rect
+       x="299.50952"
+       y="520.38336"
+       width="37.005035"
+       height="149.17656"
+       id="rect3776" />
+    <style
+       id="style1049">
+      .bg { fill: #2f2f2f; }
+      .muted { fill: #b8b8b8; }
+      .text { fill: #e9e9e9; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
+      .h1 { font-size: 34px; font-weight: 650; }
+      .small { font-size: 12px; }
+      .label { font-size: 13px; letter-spacing: .2px; }
+      .value { font-size: 40px; font-weight: 700; }
+      .unit { font-size: 18px; font-weight: 650; }
+      .card { fill: #333333; stroke: #4b4b4b; stroke-width: 1; }
+      .divider { stroke: #4a4a4a; stroke-width: 1; }
+      .gridLine { stroke: #3c3c3c; stroke-width: 1; }
+      .accentRed { stroke: #c96473; fill: none; stroke-width: 2; }
+      .accentGold { stroke: #d1b07d; fill: none; stroke-width: 2; }
+      .accentGreen { stroke: #87b26a; fill: none; stroke-width: 2; }
+      .accentBlue { stroke: #6aa2c8; fill: none; stroke-width: 2; }
+      .iconStroke { stroke: #cfcfcf; stroke-width: 1.5; fill: none; stroke-linecap: round; stroke-linejoin: round; opacity: .9; }
+    </style>
+    <!-- simple icons -->
+    <g
+       id="icon-grid">
+      <rect
+         x="0"
+         y="0"
+         width="22"
+         height="14"
+         rx="2"
+         class="iconStroke"
+         id="rect1051" />
+      <line
+         x1="3"
+         y1="4"
+         x2="19"
+         y2="4"
+         class="iconStroke"
+         id="line1053" />
+      <line
+         x1="3"
+         y1="9"
+         x2="19"
+         y2="9"
+         class="iconStroke"
+         id="line1055" />
+    </g>
+    <g
+       id="icon-sun">
+      <circle
+         cx="8"
+         cy="8"
+         r="3"
+         class="iconStroke"
+         id="circle1058" />
+      <line
+         x1="8"
+         y1="1"
+         x2="8"
+         y2="3"
+         class="iconStroke"
+         id="line1060" />
+      <line
+         x1="8"
+         y1="13"
+         x2="8"
+         y2="15"
+         class="iconStroke"
+         id="line1062" />
+      <line
+         x1="1"
+         y1="8"
+         x2="3"
+         y2="8"
+         class="iconStroke"
+         id="line1064" />
+      <line
+         x1="13"
+         y1="8"
+         x2="15"
+         y2="8"
+         class="iconStroke"
+         id="line1066" />
+      <line
+         x1="3"
+         y1="3"
+         x2="4.5"
+         y2="4.5"
+         class="iconStroke"
+         id="line1068" />
+      <line
+         x1="11.5"
+         y1="11.5"
+         x2="13"
+         y2="13"
+         class="iconStroke"
+         id="line1070" />
+      <line
+         x1="11.5"
+         y1="4.5"
+         x2="13"
+         y2="3"
+         class="iconStroke"
+         id="line1072" />
+      <line
+         x1="3"
+         y1="13"
+         x2="4.5"
+         y2="11.5"
+         class="iconStroke"
+         id="line1074" />
+    </g>
+    <g
+       id="icon-battery">
+      <rect
+         x="1"
+         y="4"
+         width="18"
+         height="10"
+         rx="2"
+         class="iconStroke"
+         id="rect1077" />
+      <rect
+         x="19"
+         y="7"
+         width="2"
+         height="4"
+         rx="1"
+         class="iconStroke"
+         id="rect1079" />
+      <line
+         x1="4"
+         y1="9"
+         x2="16"
+         y2="9"
+         class="iconStroke"
+         id="line1081" />
+    </g>
+    <g
+       id="icon-inverter">
+      <path
+         d="m 2,12 c 3,-8 7,-8 10,0 3,8 7,8 10,0"
+         class="iconStroke"
+         id="path1084" />
+      <path
+         d="m 2,8 c 3,-8 7,-8 10,0 3,8 7,8 10,0"
+         class="iconStroke"
+         opacity=".7"
+         id="path1086" />
+    </g>
+  </defs>
+  <!-- header left -->
+  <!-- header right -->
+  <!-- connecting lines / flow map (stylized) -->
+  <!-- center tile -->
+  <g
+     transform="translate(542.65557,494.62182)"
+     id="g1141"
+     inkscape:label="Multiplus2-5000">
+    <rect
+       x="0"
+       y="0"
+       width="100"
+       height="86"
+       rx="4"
+       fill="#3b6f9b"
+       stroke="#5b89ad"
+       id="rect1123" />
+    <text
+       class="text"
+       x="50"
+       y="78"
+       text-anchor="middle"
+       style="font-size:12px;fill:#cfe2f1"
+       id="text1139">Externe Strg</text>
+  </g>
+  <g
+     transform="translate(1603.6626,510.91915)"
+     id="g1141-3"
+     inkscape:label="Multiplus2GX 3000">
+    <rect
+       x="0"
+       y="0"
+       width="100"
+       height="86"
+       rx="4"
+       fill="#3b6f9b"
+       stroke="#5b89ad"
+       id="rect1123-0" />
+    <text
+       class="text"
+       x="50"
+       y="78"
+       text-anchor="middle"
+       style="font-size:12px;font-family:system-ui, '-apple-system', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;fill:#cfe2f1"
+       id="text1139-1">Externe Strg</text>
+  </g>
+  <!-- Left middle: Netz card -->
+  <g
+     transform="translate(40.265431,457.75611)"
+     id="g1193"
+     inkscape:label="Netz">
+    <rect
+       class="card"
+       x="0"
+       y="0"
+       width="320"
+       height="200"
+       rx="4"
+       id="rect1143" />
+    <g
+       transform="translate(18,20)"
+       id="g1151">
+      <text
+         class="text label"
+         x="22"
+         y="0"
+         id="text1149">Netz</text>
+    </g>
+    <g
+       transform="translate(18,62)"
+       id="g1157">
+      <text
+         class="text value"
+         x="0"
+         y="0"
+         id="text1153">1270</text>
+      <text
+         class="text unit"
+         x="96"
+         y="0"
+         id="text1155">W</text>
+    </g>
+    <!-- mini chart -->
+    <!-- table header line -->
+    <line
+       class="divider"
+       x1="14"
+       y1="82.2995"
+       x2="306"
+       y2="82.2995"
+       id="line1165" />
+    <!-- three phase rows -->
+    <g
+       class="text"
+       transform="translate(18,109.09994)"
+       style="font-size:12px"
+       id="g1191">
+      <text
+         x="0"
+         y="0"
+         class="muted"
+         id="text1167">L1</text>
+      <text
+         x="28"
+         y="0"
+         id="text1169">231 V</text>
+      <text
+         x="110"
+         y="0"
+         class="muted"
+         id="text1171">3.3 A</text>
+      <text
+         x="210"
+         y="0"
+         id="text1173">629 W</text>
+      <text
+         x="0"
+         y="26"
+         class="muted"
+         id="text1175">L2</text>
+      <text
+         x="28"
+         y="26"
+         id="text1177">233 V</text>
+      <text
+         x="110"
+         y="26"
+         class="muted"
+         id="text1179">2.3 A</text>
+      <text
+         x="210"
+         y="26"
+         id="text1181">388 W</text>
+      <text
+         x="0"
+         y="52"
+         class="muted"
+         id="text1183">L3</text>
+      <text
+         x="28"
+         y="52"
+         id="text1185">229 V</text>
+      <text
+         x="110"
+         y="52"
+         class="muted"
+         id="text1187">1.9 A</text>
+      <text
+         x="210"
+         y="52"
+         id="text1189">263 W</text>
+    </g>
+  </g>
+  <!-- Left bottom: Battery card -->
+  <g
+     transform="translate(191.01556,874.61533)"
+     id="g1241"
+     inkscape:label="Akku_Haus">
+    <rect
+       class="card"
+       x="0"
+       y="0"
+       width="320"
+       height="210"
+       rx="4"
+       id="rect1195" />
+    <g
+       transform="translate(18,28)"
+       id="g1203">
+      <use
+         href="#icon-battery"
+         x="0"
+         y="-12"
+         id="use1197" />
+      <text
+         class="text label"
+         x="28"
+         y="0"
+         id="text1199">Leerlauf</text>
+      <text
+         class="text muted small"
+         x="248"
+         y="0"
+         id="text1201">0 W</text>
+    </g>
+    <g
+       transform="translate(18,76)"
+       id="g1213">
+      <text
+         class="text value"
+         x="0"
+         y="0"
+         id="text1205">71.0</text>
+      <text
+         class="text unit"
+         x="92"
+         y="0"
+         id="text1207">%</text>
+    </g>
+    <!-- bar -->
+    <g
+       transform="translate(18,92)"
+       id="g1219" />
+    <!-- details -->
+    <line
+       class="divider"
+       x1="14"
+       y1="90"
+       x2="306"
+       y2="90"
+       id="line1221" />
+    <g
+       class="text"
+       transform="translate(18,107.30024)"
+       style="font-size:12px"
+       id="g1239">
+      <text
+         x="0"
+         y="0"
+         class="muted"
+         id="text1223">Spannung</text>
+      <text
+         x="240"
+         y="0"
+         id="text1225">53.52 V</text>
+      <text
+         x="0"
+         y="26"
+         class="muted"
+         id="text1227">Strom</text>
+      <text
+         x="240"
+         y="26"
+         id="text1229">0 A</text>
+      <text
+         x="0"
+         y="52"
+         class="muted"
+         id="text1231">Temperatur</text>
+      <text
+         x="240"
+         y="52"
+         id="text1233">24 °C</text>
+    </g>
+  </g>
+  <g
+     transform="translate(1278.5708,786.59012)"
+     id="g1241-9"
+     inkscape:label="Akku_Garage">
+    <rect
+       class="card"
+       x="0"
+       y="0"
+       width="320"
+       height="210"
+       rx="4"
+       id="rect1195-8"
+       style="fill:#333333;stroke:#4b4b4b;stroke-width:1" />
+    <g
+       transform="translate(18,28)"
+       id="g1203-6">
+      <use
+         href="#icon-battery"
+         x="0"
+         y="-12"
+         id="use1197-9" />
+      <text
+         class="text label"
+         x="28"
+         y="0"
+         id="text1199-0"
+         style="font-size:13px;font-family:system-ui, '-apple-system', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;letter-spacing:0.2px;fill:#e9e9e9">Leerlauf</text>
+      <text
+         class="text muted small"
+         x="248"
+         y="0"
+         id="text1201-1"
+         style="font-size:12px;font-family:system-ui, '-apple-system', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;fill:#e9e9e9">0 W</text>
+    </g>
+    <g
+       transform="translate(18,76)"
+       id="g1213-6">
+      <text
+         class="text value"
+         x="0"
+         y="0"
+         id="text1205-4"
+         style="font-weight:700;font-size:40px;font-family:system-ui, '-apple-system', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;fill:#e9e9e9">71.0</text>
+      <text
+         class="text unit"
+         x="88"
+         y="0"
+         id="text1207-4"
+         style="font-weight:normal;font-size:18px;font-family:system-ui, '-apple-system', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;fill:#e9e9e9">%</text>
+    </g>
+    <!-- bar -->
+    <g
+       transform="translate(18,92)"
+       id="g1219-8" />
+    <!-- details -->
+    <line
+       class="divider"
+       x1="14"
+       y1="90"
+       x2="306"
+       y2="90"
+       id="line1221-6"
+       style="stroke:#4a4a4a;stroke-width:1" />
+    <g
+       class="text"
+       transform="translate(18,107.30024)"
+       style="font-size:12px;font-family:system-ui, '-apple-system', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;fill:#e9e9e9"
+       id="g1239-1">
+      <text
+         x="0"
+         y="0"
+         class="muted"
+         id="text1223-4"
+         style="fill:#b8b8b8">Spannung</text>
+      <text
+         x="240"
+         y="0"
+         id="text1225-0">53.52 V</text>
+      <text
+         x="0"
+         y="26"
+         class="muted"
+         id="text1227-8"
+         style="fill:#b8b8b8">Strom</text>
+      <text
+         x="240"
+         y="26"
+         id="text1229-1">0 A</text>
+      <text
+         x="0"
+         y="52"
+         class="muted"
+         id="text1231-0"
+         style="fill:#b8b8b8">Temperatur</text>
+      <text
+         x="240"
+         y="52"
+         id="text1233-3">24 °C</text>
+    </g>
+  </g>
+  <!-- Right top: PV-Wechselrichter card -->
+  <g
+     transform="translate(1134.671,89.654456)"
+     id="g1279"
+     inkscape:label="HMT2000">
+    <rect
+       class="card"
+       x="0"
+       y="0"
+       width="280"
+       height="200"
+       rx="4"
+       id="rect1243"
+       sodipodi:insensitive="true" />
+    <g
+       transform="translate(18,28)"
+       id="g1249"
+       sodipodi:insensitive="true">
+      <use
+         href="#icon-sun"
+         x="0"
+         y="-14"
+         id="use1245" />
+      <text
+         class="text label"
+         x="24"
+         y="0"
+         id="text1247">HMT2000-4T</text>
+    </g>
+    <g
+       transform="translate(18,76)"
+       id="g1255"
+       sodipodi:insensitive="true">
+      <text
+         class="text value"
+         x="0"
+         y="0"
+         id="text1251">9</text>
+      <text
+         class="text unit"
+         x="28"
+         y="0"
+         id="text1253">W</text>
+    </g>
+    <!-- chart -->
+    <g
+       class="text"
+       transform="translate(17.295807,117.07292)"
+       style="font-size:12px"
+       id="g1277"
+       sodipodi:insensitive="true">
+      <text
+         x="0"
+         y="0"
+         class="muted"
+         id="text1265">L1</text>
+      <text
+         x="22"
+         y="0"
+         id="text1267">-1 W</text>
+      <text
+         x="0"
+         y="26"
+         class="muted"
+         id="text1269">L2</text>
+      <text
+         x="22"
+         y="26"
+         id="text1271">5 W</text>
+      <text
+         x="0"
+         y="52"
+         class="muted"
+         id="text1273">L3</text>
+      <text
+         x="22"
+         y="52"
+         id="text1275">5 W</text>
+    </g>
+    <line
+       class="divider"
+       x1="33.963638"
+       y1="-194.93617"
+       x2="285.96362"
+       y2="-194.93617"
+       id="line1305-2"
+       style="stroke:#4a4a4a;stroke-width:1"
+       transform="translate(-19.71741,286.19417)"
+       sodipodi:insensitive="true" />
+  </g>
+  <!-- Right middle: AC-Lasten card -->
+  <g
+     transform="translate(772.98685,454.48433)"
+     id="g1327"
+     inkscape:label="Haus">
+    <rect
+       class="card"
+       x="0"
+       y="0"
+       width="280"
+       height="210"
+       rx="4"
+       id="rect1281" />
+    <g
+       transform="translate(18,28)"
+       id="g1291">
+      <text
+         class="text label"
+         x="24"
+         y="0"
+         id="text1289">Haus</text>
+    </g>
+    <g
+       transform="translate(18,76)"
+       id="g1297">
+      <text
+         class="text value"
+         x="0"
+         y="0"
+         id="text1293">1272</text>
+      <text
+         class="text unit"
+         x="98"
+         y="0"
+         id="text1295">W</text>
+    </g>
+    <line
+       class="divider"
+       x1="14"
+       y1="90"
+       x2="266"
+       y2="90"
+       id="line1305" />
+    <g
+       class="text"
+       transform="translate(18,120.00042)"
+       style="font-size:12px"
+       id="g1325">
+      <text
+         x="0"
+         y="0"
+         class="muted"
+         id="text1307">L1</text>
+      <text
+         x="22"
+         y="0"
+         id="text1309">628 W</text>
+      <text
+         x="0"
+         y="26"
+         class="muted"
+         id="text1313">L2</text>
+      <text
+         x="22"
+         y="26"
+         id="text1315">374 W</text>
+      <text
+         x="0"
+         y="52"
+         class="muted"
+         id="text1319">L3</text>
+      <text
+         x="22"
+         y="52"
+         id="text1321">270 W</text>
+    </g>
+  </g>
+  <!-- Right bottom: PV-Ladegerät card -->
+  <g
+     transform="translate(653.42467,897.42528)"
+     id="g1369"
+     inkscape:label="MPPT450/100">
+    <rect
+       class="card"
+       x="0"
+       y="0"
+       width="280"
+       height="140"
+       rx="4"
+       id="rect1329" />
+    <g
+       transform="translate(18,28)"
+       id="g1335">
+      <use
+         href="#icon-sun"
+         x="0"
+         y="-14"
+         id="use1331" />
+      <text
+         class="text label"
+         x="24"
+         y="0"
+         id="text1333">MPPT450/100</text>
+    </g>
+    <g
+       transform="translate(18,76)"
+       id="g1341">
+      <text
+         class="text value"
+         x="0"
+         y="0"
+         id="text1337">54</text>
+      <text
+         class="text unit"
+         x="58"
+         y="0"
+         id="text1339">W</text>
+    </g>
+    <!-- chart -->
+    <line
+       class="divider"
+       x1="14"
+       y1="86"
+       x2="266"
+       y2="86"
+       id="line1349" />
+    <g
+       class="text"
+       transform="translate(16,102)"
+       style="font-size:11px"
+       id="g1367">
+      <text
+         x="0"
+         y="0"
+         class="muted"
+         id="text1351"><tspan
+           sodipodi:role="line"
+           id="tspan2225"
+           x="0"
+           y="0">MPPT1</tspan></text>
+      <text
+         x="170"
+         y="0"
+         class="muted"
+         id="text1353">280 V</text>
+      <text
+         x="252"
+         y="0"
+         text-anchor="end"
+         id="text1357">65 W</text>
+      <text
+         x="0"
+         y="18"
+         class="muted"
+         id="text1359"><tspan
+           sodipodi:role="line"
+           id="tspan2231"
+           x="0"
+           y="18">MPPT2</tspan></text>
+      <text
+         x="170"
+         y="18"
+         class="muted"
+         id="text1361">0.32 V</text>
+      <text
+         x="252"
+         y="18"
+         text-anchor="end"
+         id="text1365">0 W</text>
+    </g>
+  </g>
+  <g
+     transform="translate(1714.8775,828.52855)"
+     id="g1369-6"
+     inkscape:label="MPPT150/45">
+    <rect
+       class="card"
+       x="0"
+       y="0"
+       width="280"
+       height="140"
+       rx="4"
+       id="rect1329-8"
+       style="fill:#333333;stroke:#4b4b4b;stroke-width:1" />
+    <g
+       transform="translate(18,28)"
+       id="g1335-5">
+      <use
+         href="#icon-sun"
+         x="0"
+         y="-14"
+         id="use1331-3" />
+      <text
+         class="text label"
+         x="24"
+         y="0"
+         id="text1333-7"
+         style="font-size:13px;font-family:system-ui, '-apple-system', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;letter-spacing:0.2px;fill:#e9e9e9">MPPT150/45</text>
+    </g>
+    <g
+       transform="translate(18,76)"
+       id="g1341-6">
+      <text
+         class="text value"
+         x="0"
+         y="0"
+         id="text1337-8"
+         style="font-weight:700;font-size:40px;font-family:system-ui, '-apple-system', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;fill:#e9e9e9">54</text>
+      <text
+         class="text unit"
+         x="58"
+         y="0"
+         id="text1339-6"
+         style="font-weight:normal;font-size:18px;font-family:system-ui, '-apple-system', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;fill:#e9e9e9">W</text>
+    </g>
+    <!-- chart -->
+    <line
+       class="divider"
+       x1="14"
+       y1="86"
+       x2="266"
+       y2="86"
+       id="line1349-7"
+       style="stroke:#4a4a4a;stroke-width:1" />
+    <g
+       class="text"
+       transform="translate(16,102)"
+       style="font-size:11px;font-family:system-ui, '-apple-system', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;fill:#e9e9e9"
+       id="g1367-1">
+      <text
+         x="0"
+         y="0"
+         class="muted"
+         id="text1351-8"
+         style="fill:#b8b8b8"><tspan
+           sodipodi:role="line"
+           id="tspan2225-4"
+           x="0"
+           y="0">MPPT1</tspan></text>
+      <text
+         x="170"
+         y="0"
+         class="muted"
+         id="text1353-9"
+         style="fill:#b8b8b8">280 V</text>
+      <text
+         x="252"
+         y="0"
+         text-anchor="end"
+         id="text1357-7">65 W</text>
+    </g>
+  </g>
+</svg>

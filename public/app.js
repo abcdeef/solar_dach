@@ -11,6 +11,9 @@
   const modCurrentInput = document.getElementById('mod-current');
   const mittelstegInput = document.getElementById('mittelstegweite');
   const verbotszoneInput = document.getElementById('verbotszone');
+  const dachformSelect = document.getElementById('dachform');
+  const firstLengthInput = document.getElementById('first-length');
+  const firstLengthRow = document.getElementById('first-length-row');
   const contextMenu = document.getElementById('context-menu');
   const ctxAdd = document.getElementById('ctx-add');
   const ctxDelete = document.getElementById('ctx-delete');
@@ -32,8 +35,132 @@
   let dragStartSvgY = 0;
   let ghostRect = null;
 
+  function clampNumber(value, min, max) {
+    if (!isFinite(value)) return min;
+    return Math.min(max, Math.max(min, value));
+  }
+
+  function getDachform() {
+    return (dachformSelect && dachformSelect.value) ? dachformSelect.value : 'zeltdach';
+  }
+
+  function getFirstLengthMeters(roofWidthMeters) {
+    if (!firstLengthInput) return 0;
+    const raw = parseFloat(firstLengthInput.value);
+    const val = isFinite(raw) ? raw : 0;
+    return clampNumber(val, 0, Math.max(0, roofWidthMeters));
+  }
+
+  function getRoofPolygonMeters(roofWidthMeters, roofHeightMeters) {
+    const form = getDachform();
+    if (form === 'walmdach') {
+      const firstLengthMeters = getFirstLengthMeters(roofWidthMeters);
+      const topLeft = (roofWidthMeters - firstLengthMeters) / 2;
+      const topRight = topLeft + firstLengthMeters;
+      // Coordinate system: y=0 at top (ridge), y=roofHeight at base (downward positive)
+      return [
+        { x: 0, y: roofHeightMeters },
+        { x: roofWidthMeters, y: roofHeightMeters },
+        { x: topRight, y: 0 },
+        { x: topLeft, y: 0 }
+      ];
+    }
+    // default: zeltdach (triangle)
+    return [
+      { x: 0, y: roofHeightMeters },
+      { x: roofWidthMeters, y: roofHeightMeters },
+      { x: roofWidthMeters / 2, y: 0 }
+    ];
+  }
+
+  function insetConvexPolygon(polygonMeters, insetMeters) {
+    if (!Array.isArray(polygonMeters) || polygonMeters.length < 3) return null;
+    if (!(insetMeters > 0)) return polygonMeters;
+
+    // Use centroid as an inward test point
+    const centroid = polygonMeters.reduce((acc, p) => {
+      acc.x += p.x;
+      acc.y += p.y;
+      return acc;
+    }, { x: 0, y: 0 });
+    centroid.x /= polygonMeters.length;
+    centroid.y /= polygonMeters.length;
+
+    const makeOffsetLine = (p1, p2, inwardPoint, offset) => {
+      let a = p1.y - p2.y;
+      let b = p2.x - p1.x;
+      let c = p1.x * p2.y - p2.x * p1.y;
+      const side = a * inwardPoint.x + b * inwardPoint.y + c;
+      if (side < 0) { a *= -1; b *= -1; c *= -1; }
+      const len = Math.hypot(a, b);
+      if (!isFinite(len) || len === 0) return null;
+      c -= offset * len;
+      return { a, b, c };
+    };
+
+    const intersect = (L1, L2) => {
+      const det = L1.a * L2.b - L2.a * L1.b;
+      if (!isFinite(det) || Math.abs(det) < 1e-9) return null;
+      return {
+        x: (L1.b * L2.c - L2.b * L1.c) / det,
+        y: (L1.c * L2.a - L2.c * L1.a) / det
+      };
+    };
+
+    const lines = [];
+    for (let i = 0; i < polygonMeters.length; i++) {
+      const p1 = polygonMeters[i];
+      const p2 = polygonMeters[(i + 1) % polygonMeters.length];
+      const L = makeOffsetLine(p1, p2, centroid, insetMeters);
+      if (!L) return null;
+      lines.push(L);
+    }
+
+    const insetPoly = [];
+    for (let i = 0; i < lines.length; i++) {
+      const Lprev = lines[(i - 1 + lines.length) % lines.length];
+      const Lcur = lines[i];
+      const P = intersect(Lprev, Lcur);
+      if (!P || !isFinite(P.x) || !isFinite(P.y)) return null;
+      insetPoly.push(P);
+    }
+
+    return insetPoly;
+  }
+
+  function pointInConvexPolygon(pointMeters, polygonMeters) {
+    if (!Array.isArray(polygonMeters) || polygonMeters.length < 3) return false;
+    let sign = 0;
+    for (let i = 0; i < polygonMeters.length; i++) {
+      const a = polygonMeters[i];
+      const b = polygonMeters[(i + 1) % polygonMeters.length];
+      const cross = (b.x - a.x) * (pointMeters.y - a.y) - (b.y - a.y) * (pointMeters.x - a.x);
+      if (Math.abs(cross) < 1e-10) continue; // on edge
+      const s = cross > 0 ? 1 : -1;
+      if (sign === 0) sign = s;
+      else if (s !== sign) return false;
+    }
+    return true;
+  }
+
+  function computeRoofArea(width, height) {
+    const form = getDachform();
+    if (form === 'walmdach') {
+      const L = getFirstLengthMeters(width);
+      return ((width + L) / 2) * height;
+    }
+    // default: zeltdach
+    return 0.5 * width * height;
+  }
+
+  function updateDachformUI() {
+    if (!firstLengthRow) return;
+    const form = getDachform();
+    firstLengthRow.style.display = (form === 'walmdach') ? 'block' : 'none';
+  }
+
   function render(width, height) {
-    const area = 0.5 * width * height;
+    const area = computeRoofArea(width, height);
     areaEl.textContent = isFinite(area) ? area.toFixed(2) : '-';
 
     const margin = 20;
@@ -62,7 +189,16 @@
     lastX1 = x1;
     lastBaseY = baseY;
 
-    const points = `${x1},${baseY} ${x2},${baseY} ${topX},${topY}`;
+    let points;
+    if (getDachform() === 'walmdach') {
+      const firstLengthMeters = getFirstLengthMeters(width);
+      const firstLengthPx = firstLengthMeters * scale;
+      const topLeftX = topX - firstLengthPx / 2;
+      const topRightX = topX + firstLengthPx / 2;
+      points = `${x1},${baseY} ${x2},${baseY} ${topRightX},${topY} ${topLeftX},${topY}`;
+    } else {
+      points = `${x1},${baseY} ${x2},${baseY} ${topX},${topY}`;
+    }
 
     // ensure layers exist
     let bg = svg.querySelector('#bg-layer');
@@ -126,57 +262,18 @@
     textBase.textContent = `${width} m`;
     bg.appendChild(textBase);
 
-    // Draw verbotszone (forbidden margin). Allowed area is the inner offset triangle.
+    // Draw verbotszone (forbidden margin). Allowed area is the inner offset roof polygon.
     const verbotszoneMeters = (parseFloat(verbotszoneInput.value) || 0) / 100;
     if (verbotszoneMeters > 0) {
-      const d = verbotszoneMeters;
-      const roofW = width;
-      const roofH = height;
-      // Triangle vertices (meters)
-      const A = { x: 0, y: roofH };           // bottom-left
-      const B = { x: roofW, y: roofH };       // bottom-right
-      const C = { x: roofW / 2, y: 0 };       // top
+      const roofPolyMeters = getRoofPolygonMeters(width, height);
+      const allowedPolyMeters = insetConvexPolygon(roofPolyMeters, verbotszoneMeters);
 
-      // Helper: build offset line (ax + by + c = 0) with inward normal so that inside is >=0
-      const makeOffsetLine = (p1, p2, inwardPoint, offset) => {
-        let a = p1.y - p2.y;
-        let b = p2.x - p1.x;
-        let c = p1.x * p2.y - p2.x * p1.y;
-        const side = a * inwardPoint.x + b * inwardPoint.y + c;
-        if (side < 0) {
-          a *= -1; b *= -1; c *= -1;
-        }
-        const len = Math.hypot(a, b);
-        c -= offset * len; // move inward by offset
-        return { a, b, c };
-      };
-
-      // Intersection of two lines ax + by + c = 0
-      const intersect = (L1, L2) => {
-        const det = L1.a * L2.b - L2.a * L1.b;
-        return {
-          x: (L1.b * L2.c - L2.b * L1.c) / det,
-          y: (L1.c * L2.a - L2.c * L1.a) / det
-        };
-      };
-
-      const inwardTest = { x: roofW / 2, y: roofH / 3 }; // inside the triangle
-      const lineLeft = makeOffsetLine(A, C, inwardTest, d);
-      const lineRight = makeOffsetLine(B, C, inwardTest, d);
-      const lineBottom = makeOffsetLine(A, B, inwardTest, d);
-
-      const P1 = intersect(lineLeft, lineBottom);  // left-bottom inner vertex
-      const P2 = intersect(lineRight, lineBottom); // right-bottom inner vertex
-      const P3 = intersect(lineLeft, lineRight);   // top inner vertex
-
-      // Convert to pixels
-      const innerX1 = x1 + P1.x * scale;
-      const innerX2 = x1 + P2.x * scale;
-      const innerTopX = x1 + P3.x * scale;
-      const innerBaseY = baseY - (roofH - P1.y) * scale;
-      const innerTopY = topY + P3.y * scale;
-
-      const innerPoints = `${innerX1},${innerBaseY} ${innerX2},${innerBaseY} ${innerTopX},${innerTopY}`;
+      let innerPoints = '';
+      if (allowedPolyMeters && allowedPolyMeters.length >= 3) {
+        innerPoints = allowedPolyMeters
+          .map(p => `${x1 + p.x * scale},${topY + p.y * scale}`)
+          .join(' ');
+      }
 
       // Shade the forbidden margin (outer area) and highlight the allowed inner triangle
       const forbiddenOverlay = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
@@ -185,12 +282,14 @@
       forbiddenOverlay.setAttribute('stroke', 'none');
       bg.appendChild(forbiddenOverlay);
 
-      const allowedPolygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-      allowedPolygon.setAttribute('points', innerPoints);
-      allowedPolygon.setAttribute('fill', '#cfe8ff');
-      allowedPolygon.setAttribute('stroke', '#f00');
-      allowedPolygon.setAttribute('stroke-width', '1.5');
-      bg.appendChild(allowedPolygon);
+      if (innerPoints) {
+        const allowedPolygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+        allowedPolygon.setAttribute('points', innerPoints);
+        allowedPolygon.setAttribute('fill', '#cfe8ff');
+        allowedPolygon.setAttribute('stroke', '#f00');
+        allowedPolygon.setAttribute('stroke-width', '1.5');
+        bg.appendChild(allowedPolygon);
+      }
     }
 
     // render modules into modulesLayer
@@ -198,7 +297,7 @@
   }
 
   async function save(width, height) {
-    const area = 0.5 * width * height;
+    const area = computeRoofArea(width, height);
     const payload = {
       width, height, area,
       moduleWidth: parseFloat(modWidthInput.value) || 0,
@@ -208,6 +307,8 @@
       current: parseFloat(modCurrentInput.value) || 0,
       mittelstegweite: (parseFloat(mittelstegInput.value) || 0) / 100,
       verbotszone: (parseFloat(verbotszoneInput.value) || 0) / 100,
+      dachform: dachformSelect.value || 'zeltdach',
+      firstLength: getFirstLengthMeters(width),
       modules: modules
     };
     try {
@@ -447,53 +548,13 @@
     // Calculate bounds for the module being checked
     const boundsA = getModuleBounds(leftMeters, topMeters, widthMeters, moduleHeightMeters, rotationDegrees);
     
-    // Check verbotszone boundaries (module must stay inside the inner triangle)
+    // Check verbotszone boundaries (module must stay inside the inner offset roof polygon)
     // We only check the verbotszone - not the outer roof shape
     if (verbotszoneMeters > 0) {
-      // Compute inner triangle via parallel offset of each edge by distance d
       const d = verbotszoneMeters;
-      const A = { x: 0, y: roofH };
-      const B = { x: roofW, y: roofH };
-      const C = { x: roofW / 2, y: 0 };
-
-      const makeOffsetLine = (p1, p2, inwardPoint, offset) => {
-        let a = p1.y - p2.y;
-        let b = p2.x - p1.x;
-        let c = p1.x * p2.y - p2.x * p1.y;
-        const side = a * inwardPoint.x + b * inwardPoint.y + c;
-        if (side < 0) { a *= -1; b *= -1; c *= -1; }
-        const len = Math.hypot(a, b);
-        c -= offset * len;
-        return { a, b, c };
-      };
-
-      const intersect = (L1, L2) => {
-        const det = L1.a * L2.b - L2.a * L1.b;
-        return {
-          x: (L1.b * L2.c - L2.b * L1.c) / det,
-          y: (L1.c * L2.a - L2.c * L1.a) / det
-        };
-      };
-
-      const inwardTest = { x: roofW / 2, y: roofH / 3 };
-      const lineLeft = makeOffsetLine(A, C, inwardTest, d);
-      const lineRight = makeOffsetLine(B, C, inwardTest, d);
-      const lineBottom = makeOffsetLine(A, B, inwardTest, d);
-
-      const P1 = intersect(lineLeft, lineBottom);
-      const P2 = intersect(lineRight, lineBottom);
-      const P3 = intersect(lineLeft, lineRight);
-
-      // Point-in-triangle test (barycentric via sign of areas)
-      const ptInTri = (p, a, b, c) => {
-        const sign = (p, q, r) => (p.x - r.x) * (q.y - r.y) - (q.x - r.x) * (p.y - r.y);
-        const d1 = sign(p, a, b);
-        const d2 = sign(p, b, c);
-        const d3 = sign(p, c, a);
-        const hasNeg = (d1 < 0) || (d2 < 0) || (d3 < 0);
-        const hasPos = (d1 > 0) || (d2 > 0) || (d3 > 0);
-        return !(hasNeg && hasPos);
-      };
+      const roofPolyMeters = getRoofPolygonMeters(roofW, roofH);
+      const allowedPolyMeters = insetConvexPolygon(roofPolyMeters, d);
+      if (!allowedPolyMeters || allowedPolyMeters.length < 3) return false;
 
       // Check all four corners of module bounds
       // Triangle coords: y=0 at apex, y=roofH at base (downward positive)
@@ -506,7 +567,7 @@
       ];
 
       for (const corner of corners) {
-        if (!ptInTri(corner, P1, P2, P3)) return false; // outside allowed triangle
+        if (!pointInConvexPolygon(corner, allowedPolyMeters)) return false; // outside allowed area
       }
     }
     
@@ -862,6 +923,7 @@
   if (drawBtn) drawBtn.addEventListener('click', drawAndSave);
   widthInput.addEventListener('change', drawAndSave);
   heightInput.addEventListener('change', drawAndSave);
+  if (firstLengthInput) firstLengthInput.addEventListener('change', drawAndSave);
   mittelstegInput.addEventListener('change', drawAndSave);
   verbotszoneInput.addEventListener('change', drawAndSave);
   modWidthInput.addEventListener('change', drawAndSave);
@@ -869,6 +931,7 @@
   modPowerInput.addEventListener('change', drawAndSave);
   modVocInput.addEventListener('change', drawAndSave);
   modCurrentInput.addEventListener('change', drawAndSave);
+  dachformSelect.addEventListener('change', () => { updateDachformUI(); drawAndSave(); });
   if (resetBtn) {
     resetBtn.addEventListener('click', () => {
       modules = [];
@@ -930,6 +993,9 @@
       if (!res.ok) throw new Error('no data');
       const json = await res.json();
       if (json && json.width) {
+        if (dachformSelect) dachformSelect.value = json.dachform || 'zeltdach';
+        if (firstLengthInput) firstLengthInput.value = (json.firstLength != null ? json.firstLength : 0);
+        updateDachformUI();
         widthInput.value = json.width;
         heightInput.value = json.height || heightInput.value;
         modWidthInput.value = json.moduleWidth || modWidthInput.value;

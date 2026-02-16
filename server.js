@@ -46,6 +46,8 @@ app.post('/api/values', async (req, res) => {
       width: w,
       height: h,
       area: isFinite(a) ? a : 0,
+      dachform: String(body.dachform || 'zeltdach'),
+      firstLength: Number(body.firstLength) || 0,
       moduleWidth: Number(body.moduleWidth) || 0,
       moduleHeight: Number(body.moduleHeight) || 0,
       rotation: Number(body.rotation) || 0,
