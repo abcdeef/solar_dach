@@ -1,11 +1,12 @@
 {
   "width": 11.9,
   "height": 5.6,
-  "area": 50.11999999999999,
-  "dachform": "walmdach",
+  "area": 66.64,
+  "dachform": "flachdach",
   "firstLength": 6,
   "moduleWidth": 1.134,
   "moduleHeight": 1.762,
+  "moduleTiltDeg": 0,
   "rotation": 0,
   "power": 420,
   "voc": 50.1,
@@ -14,12 +15,12 @@
   "verbotszone": 0.3,
   "modules": [
     {
-      "id": 1771250852556,
-      "left": 5.383,
+      "id": 1771275580511,
+      "left": 7.578374347501865,
       "width": 1.134,
-      "top": 2.3875030754117743,
+      "top": 2.2936674123788223,
       "rotation": 0
     }
   ],
-  "updatedAt": "2026-02-16T15:50:46.802Z"
+  "updatedAt": "2026-02-16T21:00:02.705Z"
 }

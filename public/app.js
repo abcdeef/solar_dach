@@ -6,6 +6,8 @@
   const areaEl = document.getElementById('area');
   const modWidthInput = document.getElementById('mod-width');
   const modHeightInput = document.getElementById('mod-height');
+  const modTiltInput = document.getElementById('mod-tilt');
+  const modTiltRow = document.getElementById('mod-tilt-row');
   const modPowerInput = document.getElementById('mod-power');
   const modVocInput = document.getElementById('mod-voc');
   const modCurrentInput = document.getElementById('mod-current');
@@ -40,6 +42,81 @@
     return Math.min(max, Math.max(min, value));
   }
 
+  function getModuleTiltDeg() {
+    if (!modTiltInput) return 0;
+    const raw = parseFloat(modTiltInput.value);
+    const val = isFinite(raw) ? raw : 0;
+    return clampNumber(val, 0, 45);
+  }
+
+  function getEffectiveModuleTiltDeg() {
+    return getDachform() === 'flachdach' ? getModuleTiltDeg() : 0;
+  }
+
+  function getProjectedModuleDimsMeters(moduleWidthMeters) {
+    const physicalWidth = isFinite(moduleWidthMeters) ? Math.max(0, moduleWidthMeters) : 0;
+    const physicalHeight = Math.max(0, parseFloat(modHeightInput.value) || 0);
+    const tiltDeg = getEffectiveModuleTiltDeg();
+    if (!(tiltDeg > 0) || physicalWidth === 0 || physicalHeight === 0) {
+      return { widthMeters: physicalWidth, heightMeters: physicalHeight };
+    }
+
+    // Tilt is defined between the roof plane and the module's short side.
+    // In our UI, that short side is the module width (Breite). The long side (Höhe) stays unchanged.
+    const s = Math.cos((tiltDeg * Math.PI) / 180);
+    return { widthMeters: physicalWidth * s, heightMeters: physicalHeight };
+  }
+
+  function ensureTiltLinearGradient(tiltDeg) {
+    if (!svg) return null;
+    const t = isFinite(tiltDeg) ? tiltDeg : 0;
+    const key = Math.round(t);
+    const gradientId = `tilt-linear-${key}`;
+
+    let defs = svg.querySelector('defs');
+    if (!defs) {
+      defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+      svg.insertBefore(defs, svg.firstChild);
+    }
+
+    if (svg.querySelector(`#${gradientId}`)) return gradientId;
+
+    // Strength increases with angle (0° -> almost none, 45° -> stronger)
+    const strength = clampNumber(Math.sin((t * Math.PI) / 180), 0, 1);
+    const darkOpacity = Math.min(0.55, 0.06 + 0.44 * strength);
+    const midOpacity = darkOpacity * 0.45;
+
+    // Linear gradient: dark -> light (like the example). "End" (dark side) gets darker with angle.
+    const grad = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+    grad.setAttribute('id', gradientId);
+    grad.setAttribute('x1', '0%');
+    grad.setAttribute('y1', '0%');
+    grad.setAttribute('x2', '100%');
+    grad.setAttribute('y2', '0%');
+
+    const stop0 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+    stop0.setAttribute('offset', '0%');
+    stop0.setAttribute('stop-color', '#000');
+    stop0.setAttribute('stop-opacity', String(darkOpacity));
+
+    const stop1 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+    stop1.setAttribute('offset', '60%');
+    stop1.setAttribute('stop-color', '#000');
+    stop1.setAttribute('stop-opacity', String(midOpacity));
+
+    const stop2 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+    stop2.setAttribute('offset', '100%');
+    stop2.setAttribute('stop-color', '#000');
+    stop2.setAttribute('stop-opacity', String(0));
+
+    grad.appendChild(stop0);
+    grad.appendChild(stop1);
+    grad.appendChild(stop2);
+    defs.appendChild(grad);
+
+    return gradientId;
+  }
+
   function getDachform() {
     return (dachformSelect && dachformSelect.value) ? dachformSelect.value : 'zeltdach';
   }
@@ -53,6 +130,14 @@
 
   function getRoofPolygonMeters(roofWidthMeters, roofHeightMeters) {
     const form = getDachform();
+    if (form === 'flachdach') {
+      return [
+        { x: 0, y: roofHeightMeters },
+        { x: roofWidthMeters, y: roofHeightMeters },
+        { x: roofWidthMeters, y: 0 },
+        { x: 0, y: 0 }
+      ];
+    }
     if (form === 'walmdach') {
       const firstLengthMeters = getFirstLengthMeters(roofWidthMeters);
       const topLeft = (roofWidthMeters - firstLengthMeters) / 2;
@@ -145,6 +230,9 @@
 
   function computeRoofArea(width, height) {
     const form = getDachform();
+    if (form === 'flachdach') {
+      return width * height;
+    }
     if (form === 'walmdach') {
       const L = getFirstLengthMeters(width);
       return ((width + L) / 2) * height;
@@ -154,9 +242,13 @@
   }
 
   function updateDachformUI() {
-    if (!firstLengthRow) return;
     const form = getDachform();
-    firstLengthRow.style.display = (form === 'walmdach') ? 'block' : 'none';
+    if (firstLengthRow) firstLengthRow.style.display = (form === 'walmdach') ? 'block' : 'none';
+    if (modTiltRow) modTiltRow.style.display = (form === 'flachdach') ? 'block' : 'none';
+    if (form === 'walmdach' && firstLengthInput) {
+      const v = String(firstLengthInput.value || '').trim();
+      if (v === '') firstLengthInput.value = '5';
+    }
   }
 
   function render(width, height) {
@@ -190,7 +282,10 @@
     lastBaseY = baseY;
 
     let points;
-    if (getDachform() === 'walmdach') {
+    const form = getDachform();
+    if (form === 'flachdach') {
+      points = `${x1},${baseY} ${x2},${baseY} ${x2},${topY} ${x1},${topY}`;
+    } else if (form === 'walmdach') {
       const firstLengthMeters = getFirstLengthMeters(width);
       const firstLengthPx = firstLengthMeters * scale;
       const topLeftX = topX - firstLengthPx / 2;
@@ -302,6 +397,7 @@
       width, height, area,
       moduleWidth: parseFloat(modWidthInput.value) || 0,
       moduleHeight: parseFloat(modHeightInput.value) || 0,
+      moduleTiltDeg: getModuleTiltDeg(),
       power: parseFloat(modPowerInput.value) || 0,
       voc: parseFloat(modVocInput.value) || 0,
       current: parseFloat(modCurrentInput.value) || 0,
@@ -401,8 +497,10 @@
           const leftA = c;
           const rightA = c + widthMeters + 0.000001;
           const leftB = m.left;
-          const rightB = m.left + (m.width || parseFloat(modWidthInput.value) || 0);
-          const minDist = (m.width || parseFloat(modWidthInput.value) || 0) + widthMeters + gap;
+          const otherPhysicalWidth = (m.width || parseFloat(modWidthInput.value) || 0);
+          const otherProjectedWidth = getProjectedModuleDimsMeters(otherPhysicalWidth).widthMeters;
+          const rightB = m.left + otherProjectedWidth;
+          const minDist = otherProjectedWidth + widthMeters + gap;
           // check center distance approx
           if (Math.abs(leftA - leftB) < minDist && Math.abs(rightA - rightB) < minDist) { ok = false; break; }
           // simple overlap check
@@ -421,17 +519,19 @@
     let minDistLeft = snapThreshold;
     let minDistTop = snapThreshold;
     
-    const moduleHeightMeters = parseFloat(modHeightInput.value) || 0.0;
     const rightMeters = leftMeters + widthMeters;
     const bottomMeters = topMeters + heightMeters;
     
     for (const m of modules) {
       if (String(m.id) === String(excludeId)) continue;
       
-      const mWidth = m.width || parseFloat(modWidthInput.value) || 0;
+      const mPhysicalWidth = m.width || parseFloat(modWidthInput.value) || 0;
+      const otherDims = getProjectedModuleDimsMeters(mPhysicalWidth);
+      const mWidth = otherDims.widthMeters;
+      const mHeight = otherDims.heightMeters;
       const mTop = Number(m.top) || 0;
       const mRight = m.left + mWidth;
-      const mBottom = mTop + moduleHeightMeters;
+      const mBottom = mTop + mHeight;
       
       // Snap left edge to other module's right edge
       const distToRight = Math.abs(leftMeters - mRight);
@@ -543,10 +643,12 @@
     const verbotszoneMeters = (parseFloat(verbotszoneInput.value) || 0) / 100; // convert cm to m
     const roofW = parseFloat(widthInput.value) || 0;
     const roofH = parseFloat(heightInput.value) || 0;
-    const moduleHeightMeters = parseFloat(modHeightInput.value) || 0.0;
+    const dimsA = getProjectedModuleDimsMeters(widthMeters);
+    const moduleWidthMeters = dimsA.widthMeters;
+    const moduleHeightMeters = dimsA.heightMeters;
     
     // Calculate bounds for the module being checked
-    const boundsA = getModuleBounds(leftMeters, topMeters, widthMeters, moduleHeightMeters, rotationDegrees);
+    const boundsA = getModuleBounds(leftMeters, topMeters, moduleWidthMeters, moduleHeightMeters, rotationDegrees);
     
     // Check verbotszone boundaries (module must stay inside the inner offset roof polygon)
     // We only check the verbotszone - not the outer roof shape
@@ -575,11 +677,14 @@
     for (const m of modules) {
       if (String(m.id) === String(excludeId)) continue;
       
-      const mWidth = m.width || parseFloat(modWidthInput.value) || 0;
+      const mPhysicalWidth = m.width || parseFloat(modWidthInput.value) || 0;
+      const dimsB = getProjectedModuleDimsMeters(mPhysicalWidth);
+      const mWidth = dimsB.widthMeters;
+      const mHeight = dimsB.heightMeters;
       const mTop = Number(m.top) || 0;
       const mRotation = Number(m.rotation) || 0;
       
-      const boundsB = getModuleBounds(m.left, mTop, mWidth, moduleHeightMeters, mRotation);
+      const boundsB = getModuleBounds(m.left, mTop, mWidth, mHeight, mRotation);
       
       // AABB collision detection with gap
       const collides = !(
@@ -619,12 +724,14 @@
 
   function renderModulesIntoLayer(layer, x1, vbH, baseY, scale) {
     // draw module rects into provided layer; modules can have vertical offset `top` in meters
-    const moduleHeightMeters = parseFloat(modHeightInput.value) || 0.0;
+    const tiltDeg = getEffectiveModuleTiltDeg();
     modules.forEach(m => {
       if (dragging && String(m.id) === String(dragging.id)) return; // skip drawing the dragging module (we use ghostRect)
+      const physicalWidth = (m.width || parseFloat(modWidthInput.value) || 0);
+      const dims = getProjectedModuleDimsMeters(physicalWidth);
       const pxLeft = x1 + (m.left * scale);
-      const pxWidth = (m.width || parseFloat(modWidthInput.value) || 0) * scale;
-      const pxHeight = moduleHeightMeters * scale;
+      const pxWidth = dims.widthMeters * scale;
+      const pxHeight = dims.heightMeters * scale;
       const topMeters = Number(m.top) || 0;
       const rectY = baseY - pxHeight - (topMeters * scale);
       const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
@@ -643,12 +750,30 @@
       rect.style.cursor = 'grab';
       // Apply rotation transform around center of rect
       const rotation = Number(m.rotation) || 0;
+      const centerX = pxLeft + pxWidth / 2;
+      const centerY = rectY + pxHeight / 2;
       if (rotation !== 0) {
-        const centerX = pxLeft + pxWidth / 2;
-        const centerY = rectY + pxHeight / 2;
         rect.setAttribute('transform', `rotate(${rotation} ${centerX} ${centerY})`);
       }
       layer.appendChild(rect);
+
+      // Visual hint for tilt (2D top view): linear gradient shading over the full module area.
+      if (tiltDeg > 0.1) {
+        const gradientId = ensureTiltLinearGradient(tiltDeg);
+        if (gradientId) {
+          const shade = document.createElementNS('http://www.w3.org/2000/svg','rect');
+          shade.setAttribute('x', pxLeft);
+          shade.setAttribute('y', rectY);
+          shade.setAttribute('width', pxWidth);
+          shade.setAttribute('height', pxHeight);
+          shade.setAttribute('fill', `url(#${gradientId})`);
+          shade.style.pointerEvents = 'none';
+          if (rotation !== 0) {
+            shade.setAttribute('transform', `rotate(${rotation} ${centerX} ${centerY})`);
+          }
+          layer.appendChild(shade);
+        }
+      }
     });
   }
 
@@ -689,12 +814,12 @@
     const clickX = contextTarget.x;
     const clickY = contextTarget.y;
     const desiredLeftMeters = pxToMeters(clickX - lastX1);
-    const moduleHeightMeters = parseFloat(modHeightInput.value) || 0.0;
-    const pxHeight = moduleHeightMeters * lastScale;
+    const mwPhysical = parseFloat(modWidthInput.value) || 0;
+    const dims = getProjectedModuleDimsMeters(mwPhysical);
+    const pxHeight = dims.heightMeters * lastScale;
     const desiredTopMeters = (lastBaseY - clickY - pxHeight) / lastScale;
-    const mw = parseFloat(modWidthInput.value) || 0;
-    const left = ensureSpacing(desiredLeftMeters, mw);
-    const newModule = createModule(left, mw);
+    const left = ensureSpacing(desiredLeftMeters, dims.widthMeters);
+    const newModule = createModule(left, mwPhysical);
     newModule.top = Math.max(0, desiredTopMeters);
     modules.push(newModule);
     const w = parseFloat(widthInput.value) || 0;
@@ -743,8 +868,10 @@
       dragStartSvgX = pt.x;
       dragStartSvgY = pt.y;
       const moduleLeftPx = lastX1 + (m.left * lastScale);
-      const moduleHeightMeters = parseFloat(modHeightInput.value) || 0.0;
-      const pxHeight0 = moduleHeightMeters * lastScale;
+      const mwPhysical0 = (m.width || parseFloat(modWidthInput.value) || 0);
+      const dims0 = getProjectedModuleDimsMeters(mwPhysical0);
+      const pxWidth0 = dims0.widthMeters * lastScale;
+      const pxHeight0 = dims0.heightMeters * lastScale;
       const moduleRectY = lastBaseY - pxHeight0 - (Number(m.top)||0) * lastScale;
       const offsetX = pt.x - moduleLeftPx;
       const offsetY = pt.y - moduleRectY;
@@ -762,7 +889,6 @@
       overlay.appendChild(ghostRect);
       // position initial ghost at module position so it doesn't jump
       const pxLeft0 = moduleLeftPx;
-      const pxWidth0 = (m.width || parseFloat(modWidthInput.value) || 0) * lastScale;
       const rectY0 = moduleRectY;
       ghostRect.setAttribute('x', pxLeft0);
       ghostRect.setAttribute('y', rectY0);
@@ -798,8 +924,10 @@
       const pxTop = pt.y - dragging.offsetY;
       
       // Calculate target position in meters
-      const mw = dragging.moduleWidth || parseFloat(modWidthInput.value) || 0;
-      const moduleHeightMeters = parseFloat(modHeightInput.value) || 0.0;
+      const mwPhysical = dragging.moduleWidth || parseFloat(modWidthInput.value) || 0;
+      const dims = getProjectedModuleDimsMeters(mwPhysical);
+      const mw = dims.widthMeters;
+      const moduleHeightMeters = dims.heightMeters;
       const pxHeight = moduleHeightMeters * lastScale;
       let targetLeftMeters = pxToMeters(pxLeft - lastX1);
       let targetTopMeters = (lastBaseY - pxTop - pxHeight) / lastScale;
@@ -813,7 +941,7 @@
       targetLeftMeters = snapToHeightLine(targetLeftMeters, mw, 0.2);
       
       // Check collision
-      const isValid = isPositionValid(targetLeftMeters, targetTopMeters, mw, dragging.id, dragging.moduleRotation);
+      const isValid = isPositionValid(targetLeftMeters, targetTopMeters, mwPhysical, dragging.id, dragging.moduleRotation);
       
       // Update last valid position if current position is valid
       const m = findModuleById(dragging.id);
@@ -864,8 +992,10 @@
     const pt = svgPoint(ev.clientX, ev.clientY);
     const m = findModuleById(dragging.id);
     if (m) {
-      const mw = m.width || parseFloat(modWidthInput.value) || 0;
-      const moduleHeightMeters = parseFloat(modHeightInput.value) || 0;
+      const mwPhysical = m.width || parseFloat(modWidthInput.value) || 0;
+      const dims = getProjectedModuleDimsMeters(mwPhysical);
+      const mw = dims.widthMeters;
+      const moduleHeightMeters = dims.heightMeters;
       const pxHeight = moduleHeightMeters * lastScale;
       // compute new position based on pointer minus initial offset
       const targetLeftPx = pt.x - dragging.offsetX;
@@ -877,7 +1007,7 @@
       const snappedLeftMeters = snapToHeightLine(desiredLeftMeters, mw, 0.2);
       
       // Check if position is valid with collision detection
-      if (isPositionValid(snappedLeftMeters, desiredTopMeters, mw, dragging.id, dragging.moduleRotation)) {
+      if (isPositionValid(snappedLeftMeters, desiredTopMeters, mwPhysical, dragging.id, dragging.moduleRotation)) {
         m.left = Math.max(0, Math.min(snappedLeftMeters, (parseFloat(widthInput.value)||0) - mw));
         m.top = desiredTopMeters;
       } else {
@@ -928,6 +1058,7 @@
   verbotszoneInput.addEventListener('change', drawAndSave);
   modWidthInput.addEventListener('change', drawAndSave);
   modHeightInput.addEventListener('change', drawAndSave);
+  if (modTiltInput) modTiltInput.addEventListener('change', drawAndSave);
   modPowerInput.addEventListener('change', drawAndSave);
   modVocInput.addEventListener('change', drawAndSave);
   modCurrentInput.addEventListener('change', drawAndSave);
@@ -1000,6 +1131,7 @@
         heightInput.value = json.height || heightInput.value;
         modWidthInput.value = json.moduleWidth || modWidthInput.value;
         modHeightInput.value = json.moduleHeight || modHeightInput.value;
+        if (modTiltInput) modTiltInput.value = (json.moduleTiltDeg != null ? json.moduleTiltDeg : (json.moduleTilt || 0));
         modPowerInput.value = json.power || modPowerInput.value;
         modVocInput.value = json.voc || modVocInput.value;
         modCurrentInput.value = json.current || modCurrentInput.value;

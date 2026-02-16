@@ -17,19 +17,6 @@
       "program": "${workspaceFolder}/server.js",
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal"
-    },
-    {
-      "name": "Launch in Chrome",
-      "type": "pwa-chrome",
-      "request": "launch",
-      "url": "http://localhost:3000",
-      "webRoot": "${workspaceFolder}"
-    }
-  ],
-  "compounds": [
-    {
-      "name": "Server + Browser",
-      "configurations": ["Launch Server (direct)", "Launch in Chrome"]
     }
   ]
 }

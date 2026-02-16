@@ -3,11 +3,9 @@ stages:
 
 build_multi_arch:
   stage: build
-  tags:
-    - docker
   script:
-    - command -v docker >/dev/null 2>&1 || { echo "ERROR: 'docker' command not found on this runner. Use a runner with Docker installed (or a Docker executor runner) and tag it with 'docker'."; exit 1; }
-    - docker info >/dev/null 2>&1 || { echo "ERROR: Docker is installed but not accessible. Ensure the runner user can access the Docker daemon (e.g. in the 'docker' group) or configure DOCKER_HOST."; exit 1; }
+    - command -v docker >/dev/null 2>&1 || { echo "ERROR: 'docker' command not found in the runner environment. If you run gitlab-runner via docker-compose with the *shell* executor, the job runs inside the runner container and needs the Docker CLI there (plus /var/run/docker.sock mounted)."; exit 1; }
+    - docker info >/dev/null 2>&1 || { echo "ERROR: Docker CLI found, but cannot talk to the daemon. If using host Docker, mount /var/run/docker.sock into the runner container. Otherwise configure DOCKER_HOST appropriately."; exit 1; }
 
     # QEMU für Multi-Arch Builds aktivieren.
     # Hinweis: Auf Shell-Runnern ist oft kein `sudo` verfügbar.

@@ -50,6 +50,7 @@ app.post('/api/values', async (req, res) => {
       firstLength: Number(body.firstLength) || 0,
       moduleWidth: Number(body.moduleWidth) || 0,
       moduleHeight: Number(body.moduleHeight) || 0,
+      moduleTiltDeg: Number(body.moduleTiltDeg) || 0,
       rotation: Number(body.rotation) || 0,
       power: Number(body.power) || 0,
       voc: Number(body.voc) || 0,
