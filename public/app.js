@@ -1062,7 +1062,12 @@
   modPowerInput.addEventListener('change', drawAndSave);
   modVocInput.addEventListener('change', drawAndSave);
   modCurrentInput.addEventListener('change', drawAndSave);
-  dachformSelect.addEventListener('change', () => { updateDachformUI(); drawAndSave(); });
+  if (dachformSelect) {
+    // `input` updates immediately (e.g. keyboard navigation), `change` persists/redraws.
+    dachformSelect.addEventListener('input', updateDachformUI);
+    dachformSelect.addEventListener('change', () => { updateDachformUI(); drawAndSave(); });
+    updateDachformUI();
+  }
   if (resetBtn) {
     resetBtn.addEventListener('click', () => {
       modules = [];
