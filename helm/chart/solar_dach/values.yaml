@@ -1,0 +1,116 @@
+# Grafana Official Helm Chart Values
+# Compatible with grafana/grafana chart
+
+## Image configuration
+image:
+  repository: abcdeef/solar_dach
+  tag: "latest"
+  pullPolicy: Always
+
+## Replica configuration
+# Achtung: Bei aktivierter Persistence mit RWO (ReadWriteOnce) kann nur 1 Replika laufen.
+# Erhöhe nur, wenn deine StorageClass RWX (ReadWriteMany) unterstützt.
+replicas: 1
+
+## Deployment Strategy
+# Recreate verhindert Multi-Attach Errors bei RWO Volumes
+deploymentStrategy:
+  type: Recreate
+
+## Service configuration
+service:
+  type: LoadBalancer
+  port: 3021
+  targetPort: 3000
+  annotations: {}
+
+## Ingress configuration
+ingress:
+  enabled: true
+  ingressClassName: "traefik"
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: "default-strip-solar-dach@kubernetescrd"
+  hosts: []
+  path: /solar_dach
+  pathType: Prefix
+  tls: []
+
+## Security Context
+podSecurityContext: {}
+  # runAsNonRoot: true
+  # runAsUser: 1000
+  # runAsGroup: 1000
+
+securityContext: {}
+  # allowPrivilegeEscalation: false
+  # capabilities:
+  #   drop:
+  #     - ALL
+  # readOnlyRootFilesystem: true
+
+## Resources (entfernt für unbegrenzte Ressourcennutzung)
+# resources:
+#   limits:
+#     cpu: 500m
+#     memory: 512Mi
+#   requests:
+#     cpu: 250m
+#     memory: 256Mi
+
+## Node selector, tolerations, affinity
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+## Persistence
+persistence:
+  enabled: false
+  type: pvc
+  retain: true
+  storageClassName: "longhorn"
+  accessModes:
+    - ReadWriteOnce
+  size: 5Gi
+
+adminUser: ""
+adminPassword: ""
+admin: {}
+
+## Environment variables
+env:
+  BASE_PATH: /solar_dach
+envFrom: []
+
+## Pod Disruption Budget
+podDisruptionBudget:
+  enabled: false
+
+## Horizontal Pod Autoscaler
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+## Extra volumes and mounts
+extraVolumes: []
+extraVolumeMounts: []
+
+## Init and extra containers
+initContainers: []
+extraContainers: []
+
+## Pod annotations and labels
+podAnnotations: {}
+podLabels: {}
+
+## Force redeploy on upgrade (set via --set-string restartAt=...)
+restartAt: ""
+
+## Service monitor for Prometheus
+serviceMonitor:
+  enabled: false
+  labels: {}
+  interval: 30s
+  path: /metrics

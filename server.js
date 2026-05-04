@@ -4,6 +4,7 @@ const fs = require('fs').promises;
 const fsSync = require('fs');
 const app = express();
 const port = process.env.PORT || 3000;
+const BASE_PATH = process.env.BASE_PATH || '';
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -16,7 +17,10 @@ if (!fsSync.existsSync(dataDir)) fsSync.mkdirSync(dataDir, { recursive: true });
 if (!fsSync.existsSync(dataFile)) fsSync.writeFileSync(dataFile, JSON.stringify({}), 'utf8');
 
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  let html = fsSync.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8');
+  const baseHref = BASE_PATH ? `${BASE_PATH}/` : '/';
+  html = html.replace('<head>', `<head>\n  <base href="${baseHref}">`);
+  res.send(html);
 });
 
 // API: get last saved values

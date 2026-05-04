@@ -408,7 +408,7 @@
       modules: modules
     };
     try {
-      await fetch('/api/values', {
+      await fetch('api/values', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -1125,7 +1125,7 @@
   // Load saved values from server
   (async function loadSaved(){
     try {
-      const res = await fetch('/api/values');
+      const res = await fetch('api/values');
       if (!res.ok) throw new Error('no data');
       const json = await res.json();
       if (json && json.width) {
