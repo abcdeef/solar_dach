@@ -3,8 +3,8 @@
 
 ## Image configuration
 image:
-  repository: abcdeef/solar_dach
-  tag: "latest"
+  repository: 192.168.1.135:8880/meins/solar-dach
+  tag: "0.1.0"
   pullPolicy: Always
 
 ## Replica configuration
@@ -58,7 +58,8 @@ securityContext: {}
 #     memory: 256Mi
 
 ## Node selector, tolerations, affinity
-nodeSelector: {}
+nodeSelector:
+  kubernetes.io/hostname: raspi5
 tolerations: []
 affinity: {}
 
