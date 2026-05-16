@@ -19,7 +19,7 @@ deploymentStrategy:
 
 ## Service configuration
 service:
-  type: LoadBalancer
+  type: ClusterIP
   port: 3021
   targetPort: 3000
   annotations: {}
@@ -48,20 +48,44 @@ securityContext: {}
   #     - ALL
   # readOnlyRootFilesystem: true
 
-## Resources (entfernt für unbegrenzte Ressourcennutzung)
-# resources:
-#   limits:
-#     cpu: 500m
-#     memory: 512Mi
-#   requests:
-#     cpu: 250m
-#     memory: 256Mi
+## Resources
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 300m
+    memory: 256Mi
 
 ## Node selector, tolerations, affinity
-nodeSelector:
-  kubernetes.io/hostname: raspi5
+nodeSelector: {}
 tolerations: []
-affinity: {}
+affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/os
+              operator: In
+              values:
+                - linux
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        preference:
+          matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: NotIn
+              values:
+                - raspi5
+
+topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: kubernetes.io/hostname
+    whenUnsatisfiable: ScheduleAnyway
+    labelSelector:
+      matchLabels:
+        app.kubernetes.io/name: solar-dach
+        app.kubernetes.io/instance: solar-dach
 
 ## Persistence
 persistence:
