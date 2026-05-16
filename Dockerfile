@@ -1,11 +1,19 @@
+FROM --platform=$BUILDPLATFORM node:25-alpine AS deps
+
+# Arbeitsverzeichnis
+WORKDIR /usr/src/app
+
+# Abhaengigkeiten auf der Build-Plattform installieren, damit kein emuliertes RUN noetig ist
+COPY package*.json ./
+RUN npm install --omit=dev
+
 FROM node:25-alpine
 
 # Arbeitsverzeichnis
 WORKDIR /usr/src/app
 
-# Nur package.json kopieren und Abhängigkeiten installieren (ohne Lockfile)
 COPY package*.json ./
-RUN npm install --production
+COPY --from=deps /usr/src/app/node_modules ./node_modules
 
 # Applikationsdateien kopieren
 COPY . .
